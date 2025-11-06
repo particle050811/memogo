@@ -54,6 +54,9 @@ dumped_hertz_remote_config.json
 tools/testclient/testclient
 tools/testcursor/testcursor
 
+# VS Code Go 调试临时文件
+__debug_bin*
+
 # 配置笔记（包含敏感信息）
 ai.env.md
 
