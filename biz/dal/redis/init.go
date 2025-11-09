@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	// 确保环境变量在 Redis 初始化之前加载
+	_ "memogo/pkg/env"
 )
 
 var (

@@ -10,6 +10,9 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	// 确保环境变量在数据库初始化之前加载
+	_ "memogo/pkg/env"
 )
 
 var DB *gorm.DB

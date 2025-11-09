@@ -32,6 +32,10 @@ learning/
 - JWT 时间字段详解（ExpiresAt、IssuedAt、NotBefore）
 - JWT 防篡改原理（HMAC-SHA256 签名算法）
 - JWT vs Cookie 对比
+- JWT 密钥性能优化（启动时初始化 vs 每次读取）
+- Go 包初始化顺序与依赖管理
+- 环境变量加载时机（.env 文件）
+- Fail-Fast 原则在配置管理中的应用
 
 **关键问题**：
 - Q: 为什么登录时"用户不存在"和"密码错误"用同一个错误？
@@ -43,6 +47,11 @@ learning/
 - Q: JWT 的三个时间字段分别是什么意思？
 - Q: NotBefore 是必须设置的吗？
 - Q: HS256 签名算法如何实现签名？
+- Q: GetJWTSecret() 每次都读取环境变量会影响性能吗？
+- Q: 为什么不应该提供默认密钥？
+- Q: os.Getenv() 会自动读取 .env 文件吗？
+- Q: 为什么原来的 godotenv.Load() 位置有问题？
+- Q: 如何保证 .env 在所有包初始化之前加载？
 
 ---
 
@@ -113,10 +122,12 @@ learning/
 | 用户认证 | `learning/01-auth-and-jwt.md` |
 | JWT 令牌 | `learning/01-auth-and-jwt.md` |
 | 安全实践 | `learning/01-auth-and-jwt.md` |
+| Go 初始化顺序 | `learning/01-auth-and-jwt.md` |
+| 环境变量配置 | `learning/01-auth-and-jwt.md` |
 | 路由配置 | `learning/02-hertz-and-routing.md` |
 | 中间件 | `learning/02-hertz-and-routing.md` |
 | 缓存实现 | `learning/03-redis-cache.md` |
-| 性能优化 | `learning/03-redis-cache.md`, `learning/04-pagination-optimization.md` |
+| 性能优化 | `learning/01-auth-and-jwt.md`, `learning/03-redis-cache.md`, `learning/04-pagination-optimization.md` |
 | 分页查询 | `learning/04-pagination-optimization.md` |
 | 数据库优化 | `learning/04-pagination-optimization.md` |
 | 算法优化 | `learning/04-pagination-optimization.md` |
@@ -139,6 +150,7 @@ learning/
 | 2025-11-05 | AccessToken vs RefreshToken 详解 | `learning/01-auth-and-jwt.md` |
 | 2025-11-05 | JWT 时间字段详解 | `learning/01-auth-and-jwt.md` |
 | 2025-11-05 | HMAC-SHA256 签名算法原理 | `learning/01-auth-and-jwt.md` |
+| 2025-11-09 | JWT 密钥性能优化与初始化顺序 | `learning/01-auth-and-jwt.md` |
 
 ---
 
@@ -178,4 +190,4 @@ learning/
 ---
 
 *本笔记持续更新中...*
-*最后更新：2025-11-05（新增 JWT Token 生成与验证机制详解）*
+*最后更新：2025-11-09（新增 JWT 密钥性能优化与 Go 包初始化顺序）*

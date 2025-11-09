@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+
+	// 确保环境变量在 JWT 初始化之前加载
+	_ "memogo/pkg/env"
 )
 
 var (
@@ -14,6 +17,16 @@ var (
 	// ErrExpiredToken 过期的 token
 	ErrExpiredToken = errors.New("token expired")
 )
+
+var jwtSecret []byte
+
+func init() {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		panic("JWT_SECRET environment variable is required")
+	}
+	jwtSecret = []byte(secret)
+}
 
 // Claims JWT 声明
 type Claims struct {
@@ -25,12 +38,7 @@ type Claims struct {
 
 // GetJWTSecret 获取 JWT 密钥
 func GetJWTSecret() []byte {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		// 警告：生产环境必须设置环境变量
-		secret = "memogo-default-secret-change-in-production"
-	}
-	return []byte(secret)
+	return jwtSecret
 }
 
 // GenerateToken 生成 JWT token

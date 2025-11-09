@@ -1176,3 +1176,193 @@ JWT 签名就像快递的防伪封条：
 - JWT vs Session 深度对比：https://auth0.com/blog/session-vs-token-based-authentication/
 - OWASP CSRF 防护：https://owasp.org/www-community/attacks/csrf
 - CORS 与 Cookie 的 SameSite：https://web.dev/articles/samesite-cookies-explained
+
+---
+
+## 2025-11-09 JWT 密钥性能优化与初始化顺序
+
+### Q1: GetJWTSecret() 每次都读取环境变量会影响性能吗？
+
+**原始代码**（`pkg/jwt/jwt.go:26-34`）：
+```go
+func GetJWTSecret() []byte {
+    secret := os.Getenv("JWT_SECRET")
+    if secret == "" {
+        secret = "memogo-default-secret-change-in-production"
+    }
+    return []byte(secret)
+}
+```
+
+**问题分析**：
+- 每次生成或解析 JWT 都调用此函数
+- 每次调用都执行 `os.Getenv()` 和字符串转换
+- 高并发场景下（每秒数千请求）会产生不必要的开销
+
+**性能对比**：
+- 每次读取：数千 ns/op
+- 缓存后：几 ns/op
+
+### 用户方案：启动时初始化（最佳实践）
+
+```go
+var jwtSecret []byte
+
+func init() {
+    secret := os.Getenv("JWT_SECRET")
+    if secret == "" {
+        panic("JWT_SECRET environment variable is required")
+    }
+    jwtSecret = []byte(secret)
+}
+
+func GetJWTSecret() []byte {
+    return jwtSecret
+}
+```
+
+**优势**：
+1. **性能最优**：启动时读取一次，后续零开销
+2. **Fail-Fast**：配置错误立即暴露，不是等到第一个请求
+3. **代码简洁**：清晰表达"这是启动时的配置"
+4. **编译器优化**：GetJWTSecret() 会被内联，几乎无函数调用开销
+
+**相关文件**：`pkg/jwt/jwt.go:20-28`
+
+### Q2: 为什么不应该提供默认密钥？
+
+**危险的反模式**：
+```go
+if secret == "" {
+    secret = "memogo-default-secret-change-in-production"  // ❌ 危险！
+}
+```
+
+**安全风险**：
+1. **掩盖配置错误**：生产环境忘记设置环境变量，服务照样启动
+2. **安全漏洞**：默认密钥暴露在代码仓库，任何人都能伪造 token
+3. **违反 Fail-Fast 原则**：应该启动时立即失败
+
+**正确做法**：
+```go
+if secret == "" {
+    panic("JWT_SECRET environment variable is required")  // ✅ 立即失败
+}
+```
+
+**核心原则**：对于安全敏感的配置（密钥、密码、证书），宁可崩溃，不要用不安全的默认值。
+
+### Q3: os.Getenv() 会自动读取 .env 文件吗？
+
+**答案**：不会！`os.Getenv()` 只读取**系统环境变量**。
+
+**读取来源**：
+```bash
+# 1. Shell 环境变量
+export JWT_SECRET="my-secret"
+./memogo
+
+# 2. 运行时传入
+JWT_SECRET="my-secret" ./memogo
+
+# 3. 系统级环境变量（~/.bashrc 等）
+```
+
+**如果要读取 .env 文件**：需要使用 `github.com/joho/godotenv`
+
+### Q4: 为什么原来的 godotenv.Load() 位置有问题？
+
+**问题代码**（原 `main.go`）：
+```go
+func main() {
+    godotenv.Load()  // ← 太晚了！
+    db.Init()
+    // ...
+}
+```
+
+**Go 初始化顺序**：
+```
+1. 导入的包的 init() 按依赖顺序执行
+   └─ pkg/jwt/jwt.go 的 init() 在这里执行
+      └─ os.Getenv("JWT_SECRET") ← 此时 .env 还没加载！
+2. main() 函数开始
+   └─ godotenv.Load() ← 太晚了！
+```
+
+**结果**：程序启动时 panic，即使 `.env` 文件存在。
+
+### Q5: 如何保证 .env 在所有包初始化之前加载？
+
+**解决方案**：创建 `pkg/env` 包统一管理环境变量加载
+
+**pkg/env/env.go**：
+```go
+package env
+
+import (
+    "log"
+    "github.com/joho/godotenv"
+)
+
+func init() {
+    // 加载 .env 文件
+    if err := godotenv.Load(); err != nil {
+        log.Println("Warning: .env file not found, using system environment variables")
+    }
+}
+```
+
+**在需要环境变量的包中导入**：
+```go
+// pkg/jwt/jwt.go
+package jwt
+
+import (
+    // ...
+    _ "memogo/pkg/env"  // ← 确保 env 先初始化
+)
+
+var jwtSecret []byte
+
+func init() {
+    secret := os.Getenv("JWT_SECRET")  // ← 此时 .env 已加载
+    if secret == "" {
+        panic("JWT_SECRET environment variable is required")
+    }
+    jwtSecret = []byte(secret)
+}
+```
+
+**Go 的依赖保证**：
+- `pkg/jwt` 导入 `pkg/env`
+- Go 编译器保证 `env.init()` 先于 `jwt.init()` 执行
+- 无需手动管理复杂的初始化顺序
+
+**修改的文件**：
+- 新建：`pkg/env/env.go`
+- 修改：`pkg/jwt/jwt.go`、`biz/dal/db/init.go`、`biz/dal/redis/init.go`
+
+**初始化顺序（自动保证）**：
+```
+pkg/env.init()     ← 加载 .env 文件
+    ↓
+pkg/jwt.init()     ← 读取 JWT_SECRET
+    ↓
+biz/dal/db.Init()  ← 读取数据库配置（在 main() 中调用）
+    ↓
+main()             ← 启动服务
+```
+
+### 核心要点总结
+
+1. **性能优化**：配置应该在启动时初始化，不要每次都读取
+2. **安全优先**：敏感配置不提供默认值，使用 Fail-Fast 原则
+3. **依赖管理**：用 `import` 明确声明依赖，让 Go 编译器保证初始化顺序
+4. **简单优于复杂**：与其思考复杂的初始化顺序，不如在所有需要的地方导入 `pkg/env`
+
+**相关文件**：
+- `pkg/env/env.go` - 环境变量加载
+- `pkg/jwt/jwt.go:10-11, 23-28` - JWT 密钥初始化
+- `biz/dal/db/init.go:14-15` - 数据库配置加载
+- `biz/dal/redis/init.go:12-13` - Redis 配置加载
