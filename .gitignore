@@ -50,9 +50,8 @@ dumped_hertz_remote_config.json
 /testclient
 /testcursor
 
-# tools 目录下的可执行文件
-tools/testclient/testclient
-tools/testcursor/testcursor
+# tools 目录（包含测试客户端及其可执行文件）
+tools/
 
 # VS Code Go 调试临时文件
 __debug_bin*

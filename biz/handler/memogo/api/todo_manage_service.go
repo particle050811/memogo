@@ -70,7 +70,6 @@ func CreateTodo(ctx context.Context, c *app.RequestContext) {
 		ID:        int64(todo.ID),
 		Title:     todo.Title,
 		Content:   todo.Content,
-		View:      int32(todo.View),
 		Status:    api.TodoStatus(todo.Status),
 		CreatedAt: todo.CreatedAt.Unix(),
 	}

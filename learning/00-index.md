@@ -15,7 +15,8 @@ learning/
 ├── 01-jwt-config.md                # JWT 配置与性能优化
 ├── 02-hertz-and-routing.md         # Hertz 框架与路由
 ├── 03-redis-cache.md               # Redis 缓存相关
-└── 04-pagination-optimization.md   # 分页查询优化
+├── 04-pagination-optimization.md   # 分页查询优化
+└── 05-api-design.md                # API 设计最佳实践（版本控制、路径设计）
 ```
 
 ---
@@ -175,6 +176,23 @@ learning/
 
 ---
 
+### 05. API 设计最佳实践 [`learning/05-api-design.md`]
+
+**主题内容**：
+- RESTful 规范核心原则
+- API 版本控制策略（URL vs Header vs Query）
+- API 路径前缀设计（`/api` vs 无前缀）
+- 批量更新 API 设计（精确控制 vs 简洁性）
+- 性能优化与语义清晰的权衡
+- API 设计的可扩展性考量
+
+**关键问题**：
+- Q: `/v1` 是 RESTful 规范要求的吗？
+- Q: `/api` 前缀是 RESTful 规范要求的吗？为什么有的项目有，我的项目没有？
+- Q: 批量更新中的 `from` 字段是否多余？顺序统一写入少了判断难道不会更快？
+
+---
+
 ## 🎯 快速查找
 
 ### 按主题查找
@@ -192,10 +210,13 @@ learning/
 | 路由配置 | `learning/02-hertz-and-routing.md` |
 | 中间件 | `learning/01-jwt-middleware.md`, `learning/02-hertz-and-routing.md` |
 | 缓存实现 | `learning/03-redis-cache.md` |
-| 性能优化 | `learning/01-jwt-config.md`, `learning/03-redis-cache.md`, `learning/04-pagination-optimization.md` |
+| 性能优化 | `learning/01-jwt-config.md`, `learning/03-redis-cache.md`, `learning/04-pagination-optimization.md`, `learning/05-api-design.md` |
 | 分页查询 | `learning/04-pagination-optimization.md` |
 | 数据库优化 | `learning/04-pagination-optimization.md` |
 | 算法优化 | `learning/04-pagination-optimization.md` |
+| RESTful API | `learning/05-api-design.md` |
+| API 版本控制 | `learning/05-api-design.md` |
+| API 设计模式 | `learning/05-api-design.md` |
 
 ### 按日期查找
 
@@ -217,6 +238,9 @@ learning/
 | 2025-11-05 | HMAC-SHA256 签名算法原理 | `learning/01-jwt-security.md` |
 | 2025-11-09 | JWT 密钥性能优化与初始化顺序 | `learning/01-jwt-config.md` |
 | 2025-11-09 | 中间件工作原理与调用链 | `learning/01-jwt-middleware.md` |
+| 2025-11-10 | RESTful API 设计与版本控制 | `learning/05-api-design.md` |
+| 2025-11-10 | API 路径前缀设计（`/api` vs 无前缀） | `learning/05-api-design.md` |
+| 2025-11-10 | 批量更新 API 设计权衡（性能 vs 语义） | `learning/05-api-design.md` |
 
 ---
 
@@ -258,6 +282,14 @@ learning/
 
 ## 🔄 笔记更新历史
 
+### 2025-11-10
+- ✅ 新增笔记文件：`05-api-design.md` - API 设计最佳实践
+- ✅ 新增：RESTful 规范核心原则与常见误解
+- ✅ 新增：API 版本控制策略对比（URL vs Header vs Query）
+- ✅ 新增：API 路径前缀设计分析（`/api` vs 无前缀）
+- ✅ 新增：批量更新 API 设计权衡（性能 vs 语义清晰）
+- ✅ 新增：大公司 API 设计案例（GitHub、Twitter、Stripe）
+
 ### 2025-11-09
 - ✅ 拆分 JWT 笔记为 5 个主题文件（原文件 1369 行 → 5 个文件）
   - `01-auth-basics.md` - 认证基础
@@ -294,4 +326,4 @@ learning/
 ---
 
 *本笔记持续更新中...*
-*最后更新：2025-11-09（拆分 JWT 笔记 + 新增中间件工作原理）*
+*最后更新：2025-11-10（新增 API 设计最佳实践笔记）*

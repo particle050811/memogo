@@ -50,8 +50,7 @@ func ListTodos(ctx context.Context, c *app.RequestContext) {
 			ID:        int64(t.ID),
 			Title:     t.Title,
 			Content:   t.Content,
-			View:      int32(t.View),
-			Status:    api.TodoStatus(t.Status),
+				Status:    api.TodoStatus(t.Status),
 			CreatedAt: t.CreatedAt.Unix(),
 		}
 		if t.StartTime != nil {
@@ -110,8 +109,7 @@ func SearchTodos(ctx context.Context, c *app.RequestContext) {
 			ID:        int64(t.ID),
 			Title:     t.Title,
 			Content:   t.Content,
-			View:      int32(t.View),
-			Status:    api.TodoStatus(t.Status),
+				Status:    api.TodoStatus(t.Status),
 			CreatedAt: t.CreatedAt.Unix(),
 		}
 		if t.StartTime != nil {
@@ -174,8 +172,7 @@ func ListTodosCursor(ctx context.Context, c *app.RequestContext) {
 			ID:        int64(t.ID),
 			Title:     t.Title,
 			Content:   t.Content,
-			View:      int32(t.View),
-			Status:    api.TodoStatus(t.Status),
+				Status:    api.TodoStatus(t.Status),
 			CreatedAt: t.CreatedAt.Unix(),
 		}
 		if t.StartTime != nil {
@@ -239,8 +236,7 @@ func SearchTodosCursor(ctx context.Context, c *app.RequestContext) {
 			ID:        int64(t.ID),
 			Title:     t.Title,
 			Content:   t.Content,
-			View:      int32(t.View),
-			Status:    api.TodoStatus(t.Status),
+				Status:    api.TodoStatus(t.Status),
 			CreatedAt: t.CreatedAt.Unix(),
 		}
 		if t.StartTime != nil {

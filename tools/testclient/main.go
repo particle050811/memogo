@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -28,7 +29,6 @@ type Todo struct {
 	ID        int64  `json:"id"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
-	View      int32  `json:"view"`
 	Status    int32  `json:"status"` // 0 TODO, 1 DONE
 	CreatedAt int64  `json:"created_at"`
 	StartTime int64  `json:"start_time"`
@@ -119,6 +119,7 @@ func main() {
 	pass := flag.String("pass", "P@ssw0rd1", "password")
 	keyword := flag.String("q", "keywordX", "search keyword")
 	verboseFlag := flag.Bool("v", false, "verbose mode: print detailed HTTP requests/responses")
+	cleanDB := flag.Bool("clean-db", true, "clean database before testing")
 	flag.Parse()
 
 	verbose = *verboseFlag
@@ -126,7 +127,19 @@ func main() {
 	httpc := &http.Client{Timeout: 8 * time.Second}
 	ctx := context.Background()
 
-	// 0) 等待服务就绪（重试 ping，最多 10 秒）
+	// 0) 清理数据库（如果启用）
+	if *cleanDB {
+		fmt.Println("正在清理数据库...")
+		if err := cleanDatabase(); err != nil {
+			fmt.Fprintf(os.Stderr, "⚠️  数据库清理失败: %v\n", err)
+			fmt.Println("继续测试（数据库可能包含旧数据）...")
+		} else {
+			fmt.Println("✓ 数据库清理完成")
+		}
+		fmt.Println()
+	}
+
+	// 1) 等待服务就绪（重试 ping，最多 10 秒）
 	if err := waitServerReady(ctx, httpc, *base, 10*time.Second); err != nil {
 		fmt.Fprintln(os.Stderr, "服务未就绪:", err)
 		os.Exit(1)
@@ -320,4 +333,45 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// cleanDatabase 清空数据库表数据（保留表结构）并清空 Redis 缓存
+func cleanDatabase() error {
+	// 1. 清空 MySQL 数据
+	dbUser := getEnvOrDefault("DB_USER", "root")
+	dbPassword := getEnvOrDefault("DB_PASSWORD", "hsr123456")
+	dbName := getEnvOrDefault("DB_NAME", "memogo")
+
+	// 构建 SQL 语句：清空表数据但保留表结构
+	sql := fmt.Sprintf(
+		"USE %s; SET FOREIGN_KEY_CHECKS = 0; TRUNCATE TABLE users; TRUNCATE TABLE todos; SET FOREIGN_KEY_CHECKS = 1;",
+		dbName,
+	)
+
+	// 执行 MySQL 命令
+	cmd := exec.Command("mysql", "-u", dbUser, fmt.Sprintf("-p%s", dbPassword), "-e", sql)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("MySQL 清理失败: %v, 输出: %s", err, string(output))
+	}
+
+	// 2. 清空 Redis 缓存
+	redisCmd := exec.Command("redis-cli", "FLUSHDB")
+	redisOutput, err := redisCmd.CombinedOutput()
+	if err != nil {
+		// Redis 清理失败不致命，只警告
+		fmt.Printf("⚠️  Redis 清理失败（可忽略）: %v, 输出: %s\n", err, string(redisOutput))
+	} else {
+		fmt.Println("✓ Redis 缓存清理完成")
+	}
+
+	return nil
+}
+
+// getEnvOrDefault 获取环境变量，不存在则返回默认值
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

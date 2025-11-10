@@ -17,7 +17,6 @@ type Todo struct {
     Title   string `gorm:"not null;size:200" json:"title"`
     Content string `gorm:"type:text;not null" json:"content"`
 
-    View   int32 `gorm:"not null;default:0" json:"view"`
     Status int32 `gorm:"not null;default:0" json:"status"` // 0: TODO, 1: DONE
 
     StartTime *time.Time `json:"start_time"`

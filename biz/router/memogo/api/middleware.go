@@ -34,8 +34,8 @@ func _listtodosMw() []app.HandlerFunc {
 }
 
 func _deleteoneMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	// 需要 JWT 认证
+	return []app.HandlerFunc{middleware.JWTMiddleware.MiddlewareFunc()}
 }
 
 func _searchtodosMw() []app.HandlerFunc {

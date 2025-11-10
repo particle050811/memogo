@@ -12,12 +12,11 @@ struct Todo {
   1: i64        id
   2: string     title
   3: string     content
-  4: i32        view
-  5: TodoStatus status
-  6: Timestamp  created_at
-  7: Timestamp  start_time
-  8: Timestamp  end_time
-  9: Timestamp  due_time
+  4: TodoStatus status
+  5: Timestamp  created_at
+  6: Timestamp  start_time
+  7: Timestamp  end_time
+  8: Timestamp  due_time
 }
 
 // ---------- 认证与用户 ----------

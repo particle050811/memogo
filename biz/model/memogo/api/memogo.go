@@ -59,12 +59,11 @@ type Todo struct {
 	ID        int64      `thrift:"id,1" form:"id" json:"id" query:"id"`
 	Title     string     `thrift:"title,2" form:"title" json:"title" query:"title"`
 	Content   string     `thrift:"content,3" form:"content" json:"content" query:"content"`
-	View      int32      `thrift:"view,4" form:"view" json:"view" query:"view"`
-	Status    TodoStatus `thrift:"status,5,default,TodoStatus" form:"status" json:"status" query:"status"`
-	CreatedAt Timestamp  `thrift:"created_at,6" form:"created_at" json:"created_at" query:"created_at"`
-	StartTime Timestamp  `thrift:"start_time,7" form:"start_time" json:"start_time" query:"start_time"`
-	EndTime   Timestamp  `thrift:"end_time,8" form:"end_time" json:"end_time" query:"end_time"`
-	DueTime   Timestamp  `thrift:"due_time,9" form:"due_time" json:"due_time" query:"due_time"`
+	Status    TodoStatus `thrift:"status,4,default,TodoStatus" form:"status" json:"status" query:"status"`
+	CreatedAt Timestamp  `thrift:"created_at,5" form:"created_at" json:"created_at" query:"created_at"`
+	StartTime Timestamp  `thrift:"start_time,6" form:"start_time" json:"start_time" query:"start_time"`
+	EndTime   Timestamp  `thrift:"end_time,7" form:"end_time" json:"end_time" query:"end_time"`
+	DueTime   Timestamp  `thrift:"due_time,8" form:"due_time" json:"due_time" query:"due_time"`
 }
 
 func NewTodo() *Todo {
@@ -84,10 +83,6 @@ func (p *Todo) GetTitle() (v string) {
 
 func (p *Todo) GetContent() (v string) {
 	return p.Content
-}
-
-func (p *Todo) GetView() (v int32) {
-	return p.View
 }
 
 func (p *Todo) GetStatus() (v TodoStatus) {
@@ -114,12 +109,11 @@ var fieldIDToName_Todo = map[int16]string{
 	1: "id",
 	2: "title",
 	3: "content",
-	4: "view",
-	5: "status",
-	6: "created_at",
-	7: "start_time",
-	8: "end_time",
-	9: "due_time",
+	4: "status",
+	5: "created_at",
+	6: "start_time",
+	7: "end_time",
+	8: "due_time",
 }
 
 func (p *Todo) Read(iprot thrift.TProtocol) (err error) {
@@ -174,7 +168,7 @@ func (p *Todo) Read(iprot thrift.TProtocol) (err error) {
 				goto SkipFieldError
 			}
 		case 5:
-			if fieldTypeId == thrift.I32 {
+			if fieldTypeId == thrift.I64 {
 				if err = p.ReadField5(iprot); err != nil {
 					goto ReadFieldError
 				}
@@ -200,14 +194,6 @@ func (p *Todo) Read(iprot thrift.TProtocol) (err error) {
 		case 8:
 			if fieldTypeId == thrift.I64 {
 				if err = p.ReadField8(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		case 9:
-			if fieldTypeId == thrift.I64 {
-				if err = p.ReadField9(iprot); err != nil {
 					goto ReadFieldError
 				}
 			} else if err = iprot.Skip(fieldTypeId); err != nil {
@@ -277,17 +263,6 @@ func (p *Todo) ReadField3(iprot thrift.TProtocol) error {
 }
 func (p *Todo) ReadField4(iprot thrift.TProtocol) error {
 
-	var _field int32
-	if v, err := iprot.ReadI32(); err != nil {
-		return err
-	} else {
-		_field = v
-	}
-	p.View = _field
-	return nil
-}
-func (p *Todo) ReadField5(iprot thrift.TProtocol) error {
-
 	var _field TodoStatus
 	if v, err := iprot.ReadI32(); err != nil {
 		return err
@@ -297,7 +272,7 @@ func (p *Todo) ReadField5(iprot thrift.TProtocol) error {
 	p.Status = _field
 	return nil
 }
-func (p *Todo) ReadField6(iprot thrift.TProtocol) error {
+func (p *Todo) ReadField5(iprot thrift.TProtocol) error {
 
 	var _field Timestamp
 	if v, err := iprot.ReadI64(); err != nil {
@@ -308,7 +283,7 @@ func (p *Todo) ReadField6(iprot thrift.TProtocol) error {
 	p.CreatedAt = _field
 	return nil
 }
-func (p *Todo) ReadField7(iprot thrift.TProtocol) error {
+func (p *Todo) ReadField6(iprot thrift.TProtocol) error {
 
 	var _field Timestamp
 	if v, err := iprot.ReadI64(); err != nil {
@@ -319,7 +294,7 @@ func (p *Todo) ReadField7(iprot thrift.TProtocol) error {
 	p.StartTime = _field
 	return nil
 }
-func (p *Todo) ReadField8(iprot thrift.TProtocol) error {
+func (p *Todo) ReadField7(iprot thrift.TProtocol) error {
 
 	var _field Timestamp
 	if v, err := iprot.ReadI64(); err != nil {
@@ -330,7 +305,7 @@ func (p *Todo) ReadField8(iprot thrift.TProtocol) error {
 	p.EndTime = _field
 	return nil
 }
-func (p *Todo) ReadField9(iprot thrift.TProtocol) error {
+func (p *Todo) ReadField8(iprot thrift.TProtocol) error {
 
 	var _field Timestamp
 	if v, err := iprot.ReadI64(); err != nil {
@@ -378,10 +353,6 @@ func (p *Todo) Write(oprot thrift.TProtocol) (err error) {
 		}
 		if err = p.writeField8(oprot); err != nil {
 			fieldId = 8
-			goto WriteFieldError
-		}
-		if err = p.writeField9(oprot); err != nil {
-			fieldId = 9
 			goto WriteFieldError
 		}
 	}
@@ -454,10 +425,10 @@ WriteFieldEndError:
 }
 
 func (p *Todo) writeField4(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("view", thrift.I32, 4); err != nil {
+	if err = oprot.WriteFieldBegin("status", thrift.I32, 4); err != nil {
 		goto WriteFieldBeginError
 	}
-	if err := oprot.WriteI32(p.View); err != nil {
+	if err := oprot.WriteI32(int32(p.Status)); err != nil {
 		return err
 	}
 	if err = oprot.WriteFieldEnd(); err != nil {
@@ -471,10 +442,10 @@ WriteFieldEndError:
 }
 
 func (p *Todo) writeField5(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("status", thrift.I32, 5); err != nil {
+	if err = oprot.WriteFieldBegin("created_at", thrift.I64, 5); err != nil {
 		goto WriteFieldBeginError
 	}
-	if err := oprot.WriteI32(int32(p.Status)); err != nil {
+	if err := oprot.WriteI64(p.CreatedAt); err != nil {
 		return err
 	}
 	if err = oprot.WriteFieldEnd(); err != nil {
@@ -488,10 +459,10 @@ WriteFieldEndError:
 }
 
 func (p *Todo) writeField6(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("created_at", thrift.I64, 6); err != nil {
+	if err = oprot.WriteFieldBegin("start_time", thrift.I64, 6); err != nil {
 		goto WriteFieldBeginError
 	}
-	if err := oprot.WriteI64(p.CreatedAt); err != nil {
+	if err := oprot.WriteI64(p.StartTime); err != nil {
 		return err
 	}
 	if err = oprot.WriteFieldEnd(); err != nil {
@@ -505,10 +476,10 @@ WriteFieldEndError:
 }
 
 func (p *Todo) writeField7(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("start_time", thrift.I64, 7); err != nil {
+	if err = oprot.WriteFieldBegin("end_time", thrift.I64, 7); err != nil {
 		goto WriteFieldBeginError
 	}
-	if err := oprot.WriteI64(p.StartTime); err != nil {
+	if err := oprot.WriteI64(p.EndTime); err != nil {
 		return err
 	}
 	if err = oprot.WriteFieldEnd(); err != nil {
@@ -522,24 +493,7 @@ WriteFieldEndError:
 }
 
 func (p *Todo) writeField8(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("end_time", thrift.I64, 8); err != nil {
-		goto WriteFieldBeginError
-	}
-	if err := oprot.WriteI64(p.EndTime); err != nil {
-		return err
-	}
-	if err = oprot.WriteFieldEnd(); err != nil {
-		goto WriteFieldEndError
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 8 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 8 end error: ", p), err)
-}
-
-func (p *Todo) writeField9(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("due_time", thrift.I64, 9); err != nil {
+	if err = oprot.WriteFieldBegin("due_time", thrift.I64, 8); err != nil {
 		goto WriteFieldBeginError
 	}
 	if err := oprot.WriteI64(p.DueTime); err != nil {
@@ -550,9 +504,9 @@ func (p *Todo) writeField9(oprot thrift.TProtocol) (err error) {
 	}
 	return nil
 WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 9 begin error: ", p), err)
+	return thrift.PrependError(fmt.Sprintf("%T write field 8 begin error: ", p), err)
 WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 9 end error: ", p), err)
+	return thrift.PrependError(fmt.Sprintf("%T write field 8 end error: ", p), err)
 }
 
 func (p *Todo) String() string {

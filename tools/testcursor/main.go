@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -77,6 +78,16 @@ func main() {
 
 	httpc := &http.Client{Timeout: 8 * time.Second}
 	ctx := context.Background()
+
+	// 0. 清理数据库
+	fmt.Println("正在清理数据库...")
+	if err := cleanDatabase(); err != nil {
+		fmt.Fprintf(os.Stderr, "⚠️  数据库清理失败: %v\n", err)
+		fmt.Println("继续测试（数据库可能包含旧数据）...")
+	} else {
+		fmt.Println("✓ 数据库清理完成")
+	}
+	fmt.Println()
 
 	// 1. 注册和登录
 	regBody := map[string]string{"username": user, "password": pass}
@@ -175,4 +186,37 @@ func main() {
 
 	fmt.Println("\n🎉 所有测试通过！")
 	os.Exit(0)
+}
+
+// cleanDatabase 清空并重建数据库
+func cleanDatabase() error {
+	// 从环境变量读取数据库配置
+	dbUser := getEnvOrDefault("DB_USER", "root")
+	dbPassword := getEnvOrDefault("DB_PASSWORD", "")
+	dbName := getEnvOrDefault("DB_NAME", "memogo")
+
+	// 构建 SQL 语句
+	sql := fmt.Sprintf(
+		"DROP DATABASE IF EXISTS %s; CREATE DATABASE %s CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
+		dbName, dbName,
+	)
+
+	// 执行 MySQL 命令
+	cmd := exec.Command("mysql", "-u", dbUser, fmt.Sprintf("-p%s", dbPassword), "-e", sql)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("执行失败: %v, 输出: %s", err, string(output))
+	}
+
+	// 等待数据库初始化完成（如果服务正在运行，AutoMigrate 会自动执行）
+	time.Sleep(500 * time.Millisecond)
+	return nil
+}
+
+// getEnvOrDefault 获取环境变量，不存在则返回默认值
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

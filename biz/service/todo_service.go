@@ -37,7 +37,6 @@ func (s *TodoService) Create(userID uint, title, content string, startTime, dueT
         UserID:    userID,
         Title:     title,
         Content:   content,
-        View:      0,
         Status:    0, // TODO
         StartTime: startTime,
         DueTime:   dueTime,
