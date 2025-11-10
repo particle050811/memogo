@@ -177,9 +177,91 @@ go mod download
 
 ## 测试和调试
 
+### 运行服务
 - 运行：`go run main.go`
 - 健康检查：`GET /ping` → `{ "message": "pong" }`
 - 调试示例与 cURL：见 `docs/README.md`
 - 建议在 Postman/Apifox 配置：
   - `base_url = http://localhost:8080`
   - `access_token`、`refresh_token`（从注册/登录获取）
+
+### 自动化测试工具
+
+项目提供了两个测试客户端，用于快速验证 API 功能：
+
+#### 1. 综合功能测试 (`tools/testclient`)
+
+测试所有主要 API 端点的完整功能：
+
+```bash
+# 基本用法（使用默认配置）
+go run tools/testclient/main.go
+
+# 自定义配置
+go run tools/testclient/main.go \
+  -base http://localhost:8888 \
+  -user testuser \
+  -pass MyPassword \
+  -q searchKeyword \
+  -v  # 详细模式，显示完整的 HTTP 请求/响应
+```
+
+**参数说明：**
+- `-base`: API 服务地址（默认: `http://127.0.0.1:8888`）
+- `-user`: 测试用户名（默认: `tester`）
+- `-pass`: 测试密码（默认: `P@ssw0rd1`）
+- `-q`: 搜索关键词（默认: `keywordX`）
+- `-v`: 详细输出模式
+
+**测试覆盖：**
+- ✓ 服务健康检查 (`/ping`)
+- ✓ 用户注册 (`POST /v1/auth/register`)
+- ✓ 用户登录 (`POST /v1/auth/login`)
+- ✓ 创建待办事项 (`POST /v1/todos`)
+- ✓ 分页查询 (`GET /v1/todos`)
+- ✓ 关键词搜索 (`GET /v1/todos/search`)
+- ✓ 更新单条状态 (`PATCH /v1/todos/:id/status`)
+- ✓ 批量更新状态 (`PATCH /v1/todos/status`)
+- ✓ 按范围删除 (`DELETE /v1/todos?scope=done|todo`)
+- ✓ 单条删除 (`DELETE /v1/todos/:id`)
+
+#### 2. 游标分页测试 (`tools/testcursor`)
+
+专门测试游标分页功能（高效遍历大量数据）：
+
+```bash
+# 运行游标分页测试
+go run tools/testcursor/main.go
+```
+
+**测试流程：**
+1. 注册/登录测试用户 (`cursor_test_user`)
+2. 创建 15 条测试数据
+3. 使用游标分页遍历所有数据（每页 5 条）
+4. 测试关键词搜索 + 游标分页
+5. 清理测试数据
+
+**测试的 API：**
+- `GET /v1/todos/cursor?status=all&cursor=0&limit=5`
+- `GET /v1/todos/search/cursor?q=备忘录&cursor=0&limit=5`
+
+### 快速验证修改
+
+拆分服务后，建议运行完整测试验证：
+
+```bash
+# 1. 启动服务
+./memogo &
+
+# 2. 等待服务启动（约 1-2 秒）
+sleep 2
+
+# 3. 运行综合测试
+go run tools/testclient/main.go -v
+
+# 4. 运行游标分页测试
+go run tools/testcursor/main.go
+
+# 5. 停止服务
+pkill memogo
+```

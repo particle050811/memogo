@@ -164,37 +164,46 @@ struct DeleteResp {
 }
 
 // ========== Service 定义（HTTP 映射） ==========
-service MemoGoService {
 
-  // 用户模块：注册 / 登录 / 刷新令牌
+// 认证服务：用户注册、登录、令牌刷新
+service AuthService {
+  // 用户注册
   AuthResp Register(1: RegisterReq req)     (api.post = "/v1/auth/register")
+  // 用户登录
   AuthResp Login(1: LoginReq req)           (api.post = "/v1/auth/login")
+  // 刷新令牌
   AuthResp RefreshToken(1: RefreshReq req)  (api.post = "/v1/auth/refresh")
+}
 
-  // 事务模块：增
+// 待办事项管理服务：创建、更新、删除
+service TodoManageService {
+  // 创建待办事项
   CreateTodoResp CreateTodo(1: CreateTodoReq req) (api.post = "/v1/todos")
 
-  // 事务模块：改（单条改状态）
+  // 更新单条待办事项状态
   UpdateTodoStatusResp UpdateTodoStatus(1: UpdateTodoStatusReq req) (api.patch = "/v1/todos/:id/status")
 
-  // 事务模块：改（全部/批量改状态；用 from/to 表示"将所有 X 改为 Y"）
+  // 批量更新待办事项状态（将所有 from_status 改为 to_status）
   UpdateAllStatusResp UpdateAllStatus(1: UpdateAllStatusReq req) (api.patch = "/v1/todos/status")
 
-  // 事务模块：查（分页 + 状态过滤）
-  ListTodosResp ListTodos(1: ListTodosReq req) (api.get = "/v1/todos")
-
-  // 事务模块：查（分页 + 关键词搜索）
-  SearchTodosResp SearchTodos(1: SearchTodosReq req) (api.get = "/v1/todos/search")
-
-  // 事务模块：查（游标分页，高效遍历）
-  ListTodosCursorResp ListTodosCursor(1: ListTodosCursorReq req) (api.get = "/v1/todos/cursor")
-
-  // 事务模块：查（关键词 + 游标分页）
-  SearchTodosCursorResp SearchTodosCursor(1: SearchTodosCursorReq req) (api.get = "/v1/todos/search/cursor")
-
-  // 事务模块：删（单条）
+  // 删除单条待办事项
   DeleteResp DeleteOne(1: DeleteOneReq req) (api.delete = "/v1/todos/:id")
 
-  // 事务模块：删（按 scope 删除：done/todo/all）
+  // 按范围删除待办事项（done/todo/all）
   DeleteResp DeleteByScope(1: DeleteByScopeReq req) (api.delete = "/v1/todos")
+}
+
+// 待办事项查询服务：列表查询、搜索
+service TodoQueryService {
+  // 分页查询待办事项（支持状态过滤）
+  ListTodosResp ListTodos(1: ListTodosReq req) (api.get = "/v1/todos")
+
+  // 关键词搜索待办事项（分页）
+  SearchTodosResp SearchTodos(1: SearchTodosReq req) (api.get = "/v1/todos/search")
+
+  // 游标分页查询待办事项（高效遍历）
+  ListTodosCursorResp ListTodosCursor(1: ListTodosCursorReq req) (api.get = "/v1/todos/cursor")
+
+  // 关键词搜索 + 游标分页
+  SearchTodosCursorResp SearchTodosCursor(1: SearchTodosCursorReq req) (api.get = "/v1/todos/search/cursor")
 }

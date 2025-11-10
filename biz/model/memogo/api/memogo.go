@@ -6375,203 +6375,257 @@ func (p *DeleteResp) String() string {
 }
 
 // ========== Service 定义（HTTP 映射） ==========
-type MemoGoService interface {
-	// 用户模块：注册 / 登录 / 刷新令牌
+// 认证服务：用户注册、登录、令牌刷新
+type AuthService interface {
+	// 用户注册
 	Register(ctx context.Context, req *RegisterReq) (r *AuthResp, err error)
-
+	// 用户登录
 	Login(ctx context.Context, req *LoginReq) (r *AuthResp, err error)
-
+	// 刷新令牌
 	RefreshToken(ctx context.Context, req *RefreshReq) (r *AuthResp, err error)
-	// 事务模块：增
-	CreateTodo(ctx context.Context, req *CreateTodoReq) (r *CreateTodoResp, err error)
-	// 事务模块：改（单条改状态）
-	UpdateTodoStatus(ctx context.Context, req *UpdateTodoStatusReq) (r *UpdateTodoStatusResp, err error)
-	// 事务模块：改（全部/批量改状态；用 from/to 表示"将所有 X 改为 Y"）
-	UpdateAllStatus(ctx context.Context, req *UpdateAllStatusReq) (r *UpdateAllStatusResp, err error)
-	// 事务模块：查（分页 + 状态过滤）
-	ListTodos(ctx context.Context, req *ListTodosReq) (r *ListTodosResp, err error)
-	// 事务模块：查（分页 + 关键词搜索）
-	SearchTodos(ctx context.Context, req *SearchTodosReq) (r *SearchTodosResp, err error)
-	// 事务模块：查（游标分页，高效遍历）
-	ListTodosCursor(ctx context.Context, req *ListTodosCursorReq) (r *ListTodosCursorResp, err error)
-	// 事务模块：查（关键词 + 游标分页）
-	SearchTodosCursor(ctx context.Context, req *SearchTodosCursorReq) (r *SearchTodosCursorResp, err error)
-	// 事务模块：删（单条）
-	DeleteOne(ctx context.Context, req *DeleteOneReq) (r *DeleteResp, err error)
-	// 事务模块：删（按 scope 删除：done/todo/all）
-	DeleteByScope(ctx context.Context, req *DeleteByScopeReq) (r *DeleteResp, err error)
 }
 
-type MemoGoServiceClient struct {
+type AuthServiceClient struct {
 	c thrift.TClient
 }
 
-func NewMemoGoServiceClientFactory(t thrift.TTransport, f thrift.TProtocolFactory) *MemoGoServiceClient {
-	return &MemoGoServiceClient{
+func NewAuthServiceClientFactory(t thrift.TTransport, f thrift.TProtocolFactory) *AuthServiceClient {
+	return &AuthServiceClient{
 		c: thrift.NewTStandardClient(f.GetProtocol(t), f.GetProtocol(t)),
 	}
 }
 
-func NewMemoGoServiceClientProtocol(t thrift.TTransport, iprot thrift.TProtocol, oprot thrift.TProtocol) *MemoGoServiceClient {
-	return &MemoGoServiceClient{
+func NewAuthServiceClientProtocol(t thrift.TTransport, iprot thrift.TProtocol, oprot thrift.TProtocol) *AuthServiceClient {
+	return &AuthServiceClient{
 		c: thrift.NewTStandardClient(iprot, oprot),
 	}
 }
 
-func NewMemoGoServiceClient(c thrift.TClient) *MemoGoServiceClient {
-	return &MemoGoServiceClient{
+func NewAuthServiceClient(c thrift.TClient) *AuthServiceClient {
+	return &AuthServiceClient{
 		c: c,
 	}
 }
 
-func (p *MemoGoServiceClient) Client_() thrift.TClient {
+func (p *AuthServiceClient) Client_() thrift.TClient {
 	return p.c
 }
 
-func (p *MemoGoServiceClient) Register(ctx context.Context, req *RegisterReq) (r *AuthResp, err error) {
-	var _args MemoGoServiceRegisterArgs
+func (p *AuthServiceClient) Register(ctx context.Context, req *RegisterReq) (r *AuthResp, err error) {
+	var _args AuthServiceRegisterArgs
 	_args.Req = req
-	var _result MemoGoServiceRegisterResult
+	var _result AuthServiceRegisterResult
 	if err = p.Client_().Call(ctx, "Register", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *MemoGoServiceClient) Login(ctx context.Context, req *LoginReq) (r *AuthResp, err error) {
-	var _args MemoGoServiceLoginArgs
+func (p *AuthServiceClient) Login(ctx context.Context, req *LoginReq) (r *AuthResp, err error) {
+	var _args AuthServiceLoginArgs
 	_args.Req = req
-	var _result MemoGoServiceLoginResult
+	var _result AuthServiceLoginResult
 	if err = p.Client_().Call(ctx, "Login", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *MemoGoServiceClient) RefreshToken(ctx context.Context, req *RefreshReq) (r *AuthResp, err error) {
-	var _args MemoGoServiceRefreshTokenArgs
+func (p *AuthServiceClient) RefreshToken(ctx context.Context, req *RefreshReq) (r *AuthResp, err error) {
+	var _args AuthServiceRefreshTokenArgs
 	_args.Req = req
-	var _result MemoGoServiceRefreshTokenResult
+	var _result AuthServiceRefreshTokenResult
 	if err = p.Client_().Call(ctx, "RefreshToken", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *MemoGoServiceClient) CreateTodo(ctx context.Context, req *CreateTodoReq) (r *CreateTodoResp, err error) {
-	var _args MemoGoServiceCreateTodoArgs
+
+// 待办事项管理服务：创建、更新、删除
+type TodoManageService interface {
+	// 创建待办事项
+	CreateTodo(ctx context.Context, req *CreateTodoReq) (r *CreateTodoResp, err error)
+	// 更新单条待办事项状态
+	UpdateTodoStatus(ctx context.Context, req *UpdateTodoStatusReq) (r *UpdateTodoStatusResp, err error)
+	// 批量更新待办事项状态（将所有 from_status 改为 to_status）
+	UpdateAllStatus(ctx context.Context, req *UpdateAllStatusReq) (r *UpdateAllStatusResp, err error)
+	// 删除单条待办事项
+	DeleteOne(ctx context.Context, req *DeleteOneReq) (r *DeleteResp, err error)
+	// 按范围删除待办事项（done/todo/all）
+	DeleteByScope(ctx context.Context, req *DeleteByScopeReq) (r *DeleteResp, err error)
+}
+
+type TodoManageServiceClient struct {
+	c thrift.TClient
+}
+
+func NewTodoManageServiceClientFactory(t thrift.TTransport, f thrift.TProtocolFactory) *TodoManageServiceClient {
+	return &TodoManageServiceClient{
+		c: thrift.NewTStandardClient(f.GetProtocol(t), f.GetProtocol(t)),
+	}
+}
+
+func NewTodoManageServiceClientProtocol(t thrift.TTransport, iprot thrift.TProtocol, oprot thrift.TProtocol) *TodoManageServiceClient {
+	return &TodoManageServiceClient{
+		c: thrift.NewTStandardClient(iprot, oprot),
+	}
+}
+
+func NewTodoManageServiceClient(c thrift.TClient) *TodoManageServiceClient {
+	return &TodoManageServiceClient{
+		c: c,
+	}
+}
+
+func (p *TodoManageServiceClient) Client_() thrift.TClient {
+	return p.c
+}
+
+func (p *TodoManageServiceClient) CreateTodo(ctx context.Context, req *CreateTodoReq) (r *CreateTodoResp, err error) {
+	var _args TodoManageServiceCreateTodoArgs
 	_args.Req = req
-	var _result MemoGoServiceCreateTodoResult
+	var _result TodoManageServiceCreateTodoResult
 	if err = p.Client_().Call(ctx, "CreateTodo", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *MemoGoServiceClient) UpdateTodoStatus(ctx context.Context, req *UpdateTodoStatusReq) (r *UpdateTodoStatusResp, err error) {
-	var _args MemoGoServiceUpdateTodoStatusArgs
+func (p *TodoManageServiceClient) UpdateTodoStatus(ctx context.Context, req *UpdateTodoStatusReq) (r *UpdateTodoStatusResp, err error) {
+	var _args TodoManageServiceUpdateTodoStatusArgs
 	_args.Req = req
-	var _result MemoGoServiceUpdateTodoStatusResult
+	var _result TodoManageServiceUpdateTodoStatusResult
 	if err = p.Client_().Call(ctx, "UpdateTodoStatus", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *MemoGoServiceClient) UpdateAllStatus(ctx context.Context, req *UpdateAllStatusReq) (r *UpdateAllStatusResp, err error) {
-	var _args MemoGoServiceUpdateAllStatusArgs
+func (p *TodoManageServiceClient) UpdateAllStatus(ctx context.Context, req *UpdateAllStatusReq) (r *UpdateAllStatusResp, err error) {
+	var _args TodoManageServiceUpdateAllStatusArgs
 	_args.Req = req
-	var _result MemoGoServiceUpdateAllStatusResult
+	var _result TodoManageServiceUpdateAllStatusResult
 	if err = p.Client_().Call(ctx, "UpdateAllStatus", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *MemoGoServiceClient) ListTodos(ctx context.Context, req *ListTodosReq) (r *ListTodosResp, err error) {
-	var _args MemoGoServiceListTodosArgs
+func (p *TodoManageServiceClient) DeleteOne(ctx context.Context, req *DeleteOneReq) (r *DeleteResp, err error) {
+	var _args TodoManageServiceDeleteOneArgs
 	_args.Req = req
-	var _result MemoGoServiceListTodosResult
-	if err = p.Client_().Call(ctx, "ListTodos", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-func (p *MemoGoServiceClient) SearchTodos(ctx context.Context, req *SearchTodosReq) (r *SearchTodosResp, err error) {
-	var _args MemoGoServiceSearchTodosArgs
-	_args.Req = req
-	var _result MemoGoServiceSearchTodosResult
-	if err = p.Client_().Call(ctx, "SearchTodos", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-func (p *MemoGoServiceClient) ListTodosCursor(ctx context.Context, req *ListTodosCursorReq) (r *ListTodosCursorResp, err error) {
-	var _args MemoGoServiceListTodosCursorArgs
-	_args.Req = req
-	var _result MemoGoServiceListTodosCursorResult
-	if err = p.Client_().Call(ctx, "ListTodosCursor", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-func (p *MemoGoServiceClient) SearchTodosCursor(ctx context.Context, req *SearchTodosCursorReq) (r *SearchTodosCursorResp, err error) {
-	var _args MemoGoServiceSearchTodosCursorArgs
-	_args.Req = req
-	var _result MemoGoServiceSearchTodosCursorResult
-	if err = p.Client_().Call(ctx, "SearchTodosCursor", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-func (p *MemoGoServiceClient) DeleteOne(ctx context.Context, req *DeleteOneReq) (r *DeleteResp, err error) {
-	var _args MemoGoServiceDeleteOneArgs
-	_args.Req = req
-	var _result MemoGoServiceDeleteOneResult
+	var _result TodoManageServiceDeleteOneResult
 	if err = p.Client_().Call(ctx, "DeleteOne", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
-func (p *MemoGoServiceClient) DeleteByScope(ctx context.Context, req *DeleteByScopeReq) (r *DeleteResp, err error) {
-	var _args MemoGoServiceDeleteByScopeArgs
+func (p *TodoManageServiceClient) DeleteByScope(ctx context.Context, req *DeleteByScopeReq) (r *DeleteResp, err error) {
+	var _args TodoManageServiceDeleteByScopeArgs
 	_args.Req = req
-	var _result MemoGoServiceDeleteByScopeResult
+	var _result TodoManageServiceDeleteByScopeResult
 	if err = p.Client_().Call(ctx, "DeleteByScope", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
 
-type MemoGoServiceProcessor struct {
-	processorMap map[string]thrift.TProcessorFunction
-	handler      MemoGoService
+// 待办事项查询服务：列表查询、搜索
+type TodoQueryService interface {
+	// 分页查询待办事项（支持状态过滤）
+	ListTodos(ctx context.Context, req *ListTodosReq) (r *ListTodosResp, err error)
+	// 关键词搜索待办事项（分页）
+	SearchTodos(ctx context.Context, req *SearchTodosReq) (r *SearchTodosResp, err error)
+	// 游标分页查询待办事项（高效遍历）
+	ListTodosCursor(ctx context.Context, req *ListTodosCursorReq) (r *ListTodosCursorResp, err error)
+	// 关键词搜索 + 游标分页
+	SearchTodosCursor(ctx context.Context, req *SearchTodosCursorReq) (r *SearchTodosCursorResp, err error)
 }
 
-func (p *MemoGoServiceProcessor) AddToProcessorMap(key string, processor thrift.TProcessorFunction) {
+type TodoQueryServiceClient struct {
+	c thrift.TClient
+}
+
+func NewTodoQueryServiceClientFactory(t thrift.TTransport, f thrift.TProtocolFactory) *TodoQueryServiceClient {
+	return &TodoQueryServiceClient{
+		c: thrift.NewTStandardClient(f.GetProtocol(t), f.GetProtocol(t)),
+	}
+}
+
+func NewTodoQueryServiceClientProtocol(t thrift.TTransport, iprot thrift.TProtocol, oprot thrift.TProtocol) *TodoQueryServiceClient {
+	return &TodoQueryServiceClient{
+		c: thrift.NewTStandardClient(iprot, oprot),
+	}
+}
+
+func NewTodoQueryServiceClient(c thrift.TClient) *TodoQueryServiceClient {
+	return &TodoQueryServiceClient{
+		c: c,
+	}
+}
+
+func (p *TodoQueryServiceClient) Client_() thrift.TClient {
+	return p.c
+}
+
+func (p *TodoQueryServiceClient) ListTodos(ctx context.Context, req *ListTodosReq) (r *ListTodosResp, err error) {
+	var _args TodoQueryServiceListTodosArgs
+	_args.Req = req
+	var _result TodoQueryServiceListTodosResult
+	if err = p.Client_().Call(ctx, "ListTodos", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+func (p *TodoQueryServiceClient) SearchTodos(ctx context.Context, req *SearchTodosReq) (r *SearchTodosResp, err error) {
+	var _args TodoQueryServiceSearchTodosArgs
+	_args.Req = req
+	var _result TodoQueryServiceSearchTodosResult
+	if err = p.Client_().Call(ctx, "SearchTodos", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+func (p *TodoQueryServiceClient) ListTodosCursor(ctx context.Context, req *ListTodosCursorReq) (r *ListTodosCursorResp, err error) {
+	var _args TodoQueryServiceListTodosCursorArgs
+	_args.Req = req
+	var _result TodoQueryServiceListTodosCursorResult
+	if err = p.Client_().Call(ctx, "ListTodosCursor", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+func (p *TodoQueryServiceClient) SearchTodosCursor(ctx context.Context, req *SearchTodosCursorReq) (r *SearchTodosCursorResp, err error) {
+	var _args TodoQueryServiceSearchTodosCursorArgs
+	_args.Req = req
+	var _result TodoQueryServiceSearchTodosCursorResult
+	if err = p.Client_().Call(ctx, "SearchTodosCursor", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+type AuthServiceProcessor struct {
+	processorMap map[string]thrift.TProcessorFunction
+	handler      AuthService
+}
+
+func (p *AuthServiceProcessor) AddToProcessorMap(key string, processor thrift.TProcessorFunction) {
 	p.processorMap[key] = processor
 }
 
-func (p *MemoGoServiceProcessor) GetProcessorFunction(key string) (processor thrift.TProcessorFunction, ok bool) {
+func (p *AuthServiceProcessor) GetProcessorFunction(key string) (processor thrift.TProcessorFunction, ok bool) {
 	processor, ok = p.processorMap[key]
 	return processor, ok
 }
 
-func (p *MemoGoServiceProcessor) ProcessorMap() map[string]thrift.TProcessorFunction {
+func (p *AuthServiceProcessor) ProcessorMap() map[string]thrift.TProcessorFunction {
 	return p.processorMap
 }
 
-func NewMemoGoServiceProcessor(handler MemoGoService) *MemoGoServiceProcessor {
-	self := &MemoGoServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
-	self.AddToProcessorMap("Register", &memoGoServiceProcessorRegister{handler: handler})
-	self.AddToProcessorMap("Login", &memoGoServiceProcessorLogin{handler: handler})
-	self.AddToProcessorMap("RefreshToken", &memoGoServiceProcessorRefreshToken{handler: handler})
-	self.AddToProcessorMap("CreateTodo", &memoGoServiceProcessorCreateTodo{handler: handler})
-	self.AddToProcessorMap("UpdateTodoStatus", &memoGoServiceProcessorUpdateTodoStatus{handler: handler})
-	self.AddToProcessorMap("UpdateAllStatus", &memoGoServiceProcessorUpdateAllStatus{handler: handler})
-	self.AddToProcessorMap("ListTodos", &memoGoServiceProcessorListTodos{handler: handler})
-	self.AddToProcessorMap("SearchTodos", &memoGoServiceProcessorSearchTodos{handler: handler})
-	self.AddToProcessorMap("ListTodosCursor", &memoGoServiceProcessorListTodosCursor{handler: handler})
-	self.AddToProcessorMap("SearchTodosCursor", &memoGoServiceProcessorSearchTodosCursor{handler: handler})
-	self.AddToProcessorMap("DeleteOne", &memoGoServiceProcessorDeleteOne{handler: handler})
-	self.AddToProcessorMap("DeleteByScope", &memoGoServiceProcessorDeleteByScope{handler: handler})
+func NewAuthServiceProcessor(handler AuthService) *AuthServiceProcessor {
+	self := &AuthServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
+	self.AddToProcessorMap("Register", &authServiceProcessorRegister{handler: handler})
+	self.AddToProcessorMap("Login", &authServiceProcessorLogin{handler: handler})
+	self.AddToProcessorMap("RefreshToken", &authServiceProcessorRefreshToken{handler: handler})
 	return self
 }
-func (p *MemoGoServiceProcessor) Process(ctx context.Context, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+func (p *AuthServiceProcessor) Process(ctx context.Context, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
 	name, _, seqId, err := iprot.ReadMessageBegin()
 	if err != nil {
 		return false, err
@@ -6589,12 +6643,12 @@ func (p *MemoGoServiceProcessor) Process(ctx context.Context, iprot, oprot thrif
 	return false, x
 }
 
-type memoGoServiceProcessorRegister struct {
-	handler MemoGoService
+type authServiceProcessorRegister struct {
+	handler AuthService
 }
 
-func (p *memoGoServiceProcessorRegister) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceRegisterArgs{}
+func (p *authServiceProcessorRegister) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := AuthServiceRegisterArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -6607,7 +6661,7 @@ func (p *memoGoServiceProcessorRegister) Process(ctx context.Context, seqId int3
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := MemoGoServiceRegisterResult{}
+	result := AuthServiceRegisterResult{}
 	var retval *AuthResp
 	if retval, err2 = p.handler.Register(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing Register: "+err2.Error())
@@ -6637,12 +6691,12 @@ func (p *memoGoServiceProcessorRegister) Process(ctx context.Context, seqId int3
 	return true, err
 }
 
-type memoGoServiceProcessorLogin struct {
-	handler MemoGoService
+type authServiceProcessorLogin struct {
+	handler AuthService
 }
 
-func (p *memoGoServiceProcessorLogin) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceLoginArgs{}
+func (p *authServiceProcessorLogin) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := AuthServiceLoginArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -6655,7 +6709,7 @@ func (p *memoGoServiceProcessorLogin) Process(ctx context.Context, seqId int32, 
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := MemoGoServiceLoginResult{}
+	result := AuthServiceLoginResult{}
 	var retval *AuthResp
 	if retval, err2 = p.handler.Login(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing Login: "+err2.Error())
@@ -6685,12 +6739,12 @@ func (p *memoGoServiceProcessorLogin) Process(ctx context.Context, seqId int32, 
 	return true, err
 }
 
-type memoGoServiceProcessorRefreshToken struct {
-	handler MemoGoService
+type authServiceProcessorRefreshToken struct {
+	handler AuthService
 }
 
-func (p *memoGoServiceProcessorRefreshToken) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceRefreshTokenArgs{}
+func (p *authServiceProcessorRefreshToken) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := AuthServiceRefreshTokenArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -6703,7 +6757,7 @@ func (p *memoGoServiceProcessorRefreshToken) Process(ctx context.Context, seqId 
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := MemoGoServiceRefreshTokenResult{}
+	result := AuthServiceRefreshTokenResult{}
 	var retval *AuthResp
 	if retval, err2 = p.handler.RefreshToken(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing RefreshToken: "+err2.Error())
@@ -6733,12 +6787,939 @@ func (p *memoGoServiceProcessorRefreshToken) Process(ctx context.Context, seqId 
 	return true, err
 }
 
-type memoGoServiceProcessorCreateTodo struct {
-	handler MemoGoService
+type AuthServiceRegisterArgs struct {
+	Req *RegisterReq `thrift:"req,1"`
 }
 
-func (p *memoGoServiceProcessorCreateTodo) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceCreateTodoArgs{}
+func NewAuthServiceRegisterArgs() *AuthServiceRegisterArgs {
+	return &AuthServiceRegisterArgs{}
+}
+
+func (p *AuthServiceRegisterArgs) InitDefault() {
+}
+
+var AuthServiceRegisterArgs_Req_DEFAULT *RegisterReq
+
+func (p *AuthServiceRegisterArgs) GetReq() (v *RegisterReq) {
+	if !p.IsSetReq() {
+		return AuthServiceRegisterArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+var fieldIDToName_AuthServiceRegisterArgs = map[int16]string{
+	1: "req",
+}
+
+func (p *AuthServiceRegisterArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *AuthServiceRegisterArgs) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 1:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField1(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_AuthServiceRegisterArgs[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *AuthServiceRegisterArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewRegisterReq()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Req = _field
+	return nil
+}
+
+func (p *AuthServiceRegisterArgs) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("Register_args"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField1(oprot); err != nil {
+			fieldId = 1
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *AuthServiceRegisterArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := p.Req.Write(oprot); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+
+func (p *AuthServiceRegisterArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuthServiceRegisterArgs(%+v)", *p)
+
+}
+
+type AuthServiceRegisterResult struct {
+	Success *AuthResp `thrift:"success,0,optional"`
+}
+
+func NewAuthServiceRegisterResult() *AuthServiceRegisterResult {
+	return &AuthServiceRegisterResult{}
+}
+
+func (p *AuthServiceRegisterResult) InitDefault() {
+}
+
+var AuthServiceRegisterResult_Success_DEFAULT *AuthResp
+
+func (p *AuthServiceRegisterResult) GetSuccess() (v *AuthResp) {
+	if !p.IsSetSuccess() {
+		return AuthServiceRegisterResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+var fieldIDToName_AuthServiceRegisterResult = map[int16]string{
+	0: "success",
+}
+
+func (p *AuthServiceRegisterResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *AuthServiceRegisterResult) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 0:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField0(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_AuthServiceRegisterResult[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *AuthServiceRegisterResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewAuthResp()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Success = _field
+	return nil
+}
+
+func (p *AuthServiceRegisterResult) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("Register_result"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField0(oprot); err != nil {
+			fieldId = 0
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *AuthServiceRegisterResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			goto WriteFieldBeginError
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return err
+		}
+		if err = oprot.WriteFieldEnd(); err != nil {
+			goto WriteFieldEndError
+		}
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
+}
+
+func (p *AuthServiceRegisterResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuthServiceRegisterResult(%+v)", *p)
+
+}
+
+type AuthServiceLoginArgs struct {
+	Req *LoginReq `thrift:"req,1"`
+}
+
+func NewAuthServiceLoginArgs() *AuthServiceLoginArgs {
+	return &AuthServiceLoginArgs{}
+}
+
+func (p *AuthServiceLoginArgs) InitDefault() {
+}
+
+var AuthServiceLoginArgs_Req_DEFAULT *LoginReq
+
+func (p *AuthServiceLoginArgs) GetReq() (v *LoginReq) {
+	if !p.IsSetReq() {
+		return AuthServiceLoginArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+var fieldIDToName_AuthServiceLoginArgs = map[int16]string{
+	1: "req",
+}
+
+func (p *AuthServiceLoginArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *AuthServiceLoginArgs) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 1:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField1(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_AuthServiceLoginArgs[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *AuthServiceLoginArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewLoginReq()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Req = _field
+	return nil
+}
+
+func (p *AuthServiceLoginArgs) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("Login_args"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField1(oprot); err != nil {
+			fieldId = 1
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *AuthServiceLoginArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := p.Req.Write(oprot); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+
+func (p *AuthServiceLoginArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuthServiceLoginArgs(%+v)", *p)
+
+}
+
+type AuthServiceLoginResult struct {
+	Success *AuthResp `thrift:"success,0,optional"`
+}
+
+func NewAuthServiceLoginResult() *AuthServiceLoginResult {
+	return &AuthServiceLoginResult{}
+}
+
+func (p *AuthServiceLoginResult) InitDefault() {
+}
+
+var AuthServiceLoginResult_Success_DEFAULT *AuthResp
+
+func (p *AuthServiceLoginResult) GetSuccess() (v *AuthResp) {
+	if !p.IsSetSuccess() {
+		return AuthServiceLoginResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+var fieldIDToName_AuthServiceLoginResult = map[int16]string{
+	0: "success",
+}
+
+func (p *AuthServiceLoginResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *AuthServiceLoginResult) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 0:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField0(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_AuthServiceLoginResult[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *AuthServiceLoginResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewAuthResp()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Success = _field
+	return nil
+}
+
+func (p *AuthServiceLoginResult) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("Login_result"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField0(oprot); err != nil {
+			fieldId = 0
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *AuthServiceLoginResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			goto WriteFieldBeginError
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return err
+		}
+		if err = oprot.WriteFieldEnd(); err != nil {
+			goto WriteFieldEndError
+		}
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
+}
+
+func (p *AuthServiceLoginResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuthServiceLoginResult(%+v)", *p)
+
+}
+
+type AuthServiceRefreshTokenArgs struct {
+	Req *RefreshReq `thrift:"req,1"`
+}
+
+func NewAuthServiceRefreshTokenArgs() *AuthServiceRefreshTokenArgs {
+	return &AuthServiceRefreshTokenArgs{}
+}
+
+func (p *AuthServiceRefreshTokenArgs) InitDefault() {
+}
+
+var AuthServiceRefreshTokenArgs_Req_DEFAULT *RefreshReq
+
+func (p *AuthServiceRefreshTokenArgs) GetReq() (v *RefreshReq) {
+	if !p.IsSetReq() {
+		return AuthServiceRefreshTokenArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+var fieldIDToName_AuthServiceRefreshTokenArgs = map[int16]string{
+	1: "req",
+}
+
+func (p *AuthServiceRefreshTokenArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *AuthServiceRefreshTokenArgs) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 1:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField1(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_AuthServiceRefreshTokenArgs[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *AuthServiceRefreshTokenArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewRefreshReq()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Req = _field
+	return nil
+}
+
+func (p *AuthServiceRefreshTokenArgs) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("RefreshToken_args"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField1(oprot); err != nil {
+			fieldId = 1
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *AuthServiceRefreshTokenArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := p.Req.Write(oprot); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+
+func (p *AuthServiceRefreshTokenArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuthServiceRefreshTokenArgs(%+v)", *p)
+
+}
+
+type AuthServiceRefreshTokenResult struct {
+	Success *AuthResp `thrift:"success,0,optional"`
+}
+
+func NewAuthServiceRefreshTokenResult() *AuthServiceRefreshTokenResult {
+	return &AuthServiceRefreshTokenResult{}
+}
+
+func (p *AuthServiceRefreshTokenResult) InitDefault() {
+}
+
+var AuthServiceRefreshTokenResult_Success_DEFAULT *AuthResp
+
+func (p *AuthServiceRefreshTokenResult) GetSuccess() (v *AuthResp) {
+	if !p.IsSetSuccess() {
+		return AuthServiceRefreshTokenResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+var fieldIDToName_AuthServiceRefreshTokenResult = map[int16]string{
+	0: "success",
+}
+
+func (p *AuthServiceRefreshTokenResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *AuthServiceRefreshTokenResult) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 0:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField0(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_AuthServiceRefreshTokenResult[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *AuthServiceRefreshTokenResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewAuthResp()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Success = _field
+	return nil
+}
+
+func (p *AuthServiceRefreshTokenResult) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("RefreshToken_result"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField0(oprot); err != nil {
+			fieldId = 0
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *AuthServiceRefreshTokenResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			goto WriteFieldBeginError
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return err
+		}
+		if err = oprot.WriteFieldEnd(); err != nil {
+			goto WriteFieldEndError
+		}
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
+}
+
+func (p *AuthServiceRefreshTokenResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuthServiceRefreshTokenResult(%+v)", *p)
+
+}
+
+type TodoManageServiceProcessor struct {
+	processorMap map[string]thrift.TProcessorFunction
+	handler      TodoManageService
+}
+
+func (p *TodoManageServiceProcessor) AddToProcessorMap(key string, processor thrift.TProcessorFunction) {
+	p.processorMap[key] = processor
+}
+
+func (p *TodoManageServiceProcessor) GetProcessorFunction(key string) (processor thrift.TProcessorFunction, ok bool) {
+	processor, ok = p.processorMap[key]
+	return processor, ok
+}
+
+func (p *TodoManageServiceProcessor) ProcessorMap() map[string]thrift.TProcessorFunction {
+	return p.processorMap
+}
+
+func NewTodoManageServiceProcessor(handler TodoManageService) *TodoManageServiceProcessor {
+	self := &TodoManageServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
+	self.AddToProcessorMap("CreateTodo", &todoManageServiceProcessorCreateTodo{handler: handler})
+	self.AddToProcessorMap("UpdateTodoStatus", &todoManageServiceProcessorUpdateTodoStatus{handler: handler})
+	self.AddToProcessorMap("UpdateAllStatus", &todoManageServiceProcessorUpdateAllStatus{handler: handler})
+	self.AddToProcessorMap("DeleteOne", &todoManageServiceProcessorDeleteOne{handler: handler})
+	self.AddToProcessorMap("DeleteByScope", &todoManageServiceProcessorDeleteByScope{handler: handler})
+	return self
+}
+func (p *TodoManageServiceProcessor) Process(ctx context.Context, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	name, _, seqId, err := iprot.ReadMessageBegin()
+	if err != nil {
+		return false, err
+	}
+	if processor, ok := p.GetProcessorFunction(name); ok {
+		return processor.Process(ctx, seqId, iprot, oprot)
+	}
+	iprot.Skip(thrift.STRUCT)
+	iprot.ReadMessageEnd()
+	x := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
+	oprot.WriteMessageBegin(name, thrift.EXCEPTION, seqId)
+	x.Write(oprot)
+	oprot.WriteMessageEnd()
+	oprot.Flush(ctx)
+	return false, x
+}
+
+type todoManageServiceProcessorCreateTodo struct {
+	handler TodoManageService
+}
+
+func (p *todoManageServiceProcessorCreateTodo) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoManageServiceCreateTodoArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -6751,7 +7732,7 @@ func (p *memoGoServiceProcessorCreateTodo) Process(ctx context.Context, seqId in
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := MemoGoServiceCreateTodoResult{}
+	result := TodoManageServiceCreateTodoResult{}
 	var retval *CreateTodoResp
 	if retval, err2 = p.handler.CreateTodo(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing CreateTodo: "+err2.Error())
@@ -6781,12 +7762,12 @@ func (p *memoGoServiceProcessorCreateTodo) Process(ctx context.Context, seqId in
 	return true, err
 }
 
-type memoGoServiceProcessorUpdateTodoStatus struct {
-	handler MemoGoService
+type todoManageServiceProcessorUpdateTodoStatus struct {
+	handler TodoManageService
 }
 
-func (p *memoGoServiceProcessorUpdateTodoStatus) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceUpdateTodoStatusArgs{}
+func (p *todoManageServiceProcessorUpdateTodoStatus) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoManageServiceUpdateTodoStatusArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -6799,7 +7780,7 @@ func (p *memoGoServiceProcessorUpdateTodoStatus) Process(ctx context.Context, se
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := MemoGoServiceUpdateTodoStatusResult{}
+	result := TodoManageServiceUpdateTodoStatusResult{}
 	var retval *UpdateTodoStatusResp
 	if retval, err2 = p.handler.UpdateTodoStatus(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing UpdateTodoStatus: "+err2.Error())
@@ -6829,12 +7810,12 @@ func (p *memoGoServiceProcessorUpdateTodoStatus) Process(ctx context.Context, se
 	return true, err
 }
 
-type memoGoServiceProcessorUpdateAllStatus struct {
-	handler MemoGoService
+type todoManageServiceProcessorUpdateAllStatus struct {
+	handler TodoManageService
 }
 
-func (p *memoGoServiceProcessorUpdateAllStatus) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceUpdateAllStatusArgs{}
+func (p *todoManageServiceProcessorUpdateAllStatus) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoManageServiceUpdateAllStatusArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -6847,7 +7828,7 @@ func (p *memoGoServiceProcessorUpdateAllStatus) Process(ctx context.Context, seq
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := MemoGoServiceUpdateAllStatusResult{}
+	result := TodoManageServiceUpdateAllStatusResult{}
 	var retval *UpdateAllStatusResp
 	if retval, err2 = p.handler.UpdateAllStatus(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing UpdateAllStatus: "+err2.Error())
@@ -6877,204 +7858,12 @@ func (p *memoGoServiceProcessorUpdateAllStatus) Process(ctx context.Context, seq
 	return true, err
 }
 
-type memoGoServiceProcessorListTodos struct {
-	handler MemoGoService
+type todoManageServiceProcessorDeleteOne struct {
+	handler TodoManageService
 }
 
-func (p *memoGoServiceProcessorListTodos) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceListTodosArgs{}
-	if err = args.Read(iprot); err != nil {
-		iprot.ReadMessageEnd()
-		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
-		oprot.WriteMessageBegin("ListTodos", thrift.EXCEPTION, seqId)
-		x.Write(oprot)
-		oprot.WriteMessageEnd()
-		oprot.Flush(ctx)
-		return false, err
-	}
-
-	iprot.ReadMessageEnd()
-	var err2 error
-	result := MemoGoServiceListTodosResult{}
-	var retval *ListTodosResp
-	if retval, err2 = p.handler.ListTodos(ctx, args.Req); err2 != nil {
-		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing ListTodos: "+err2.Error())
-		oprot.WriteMessageBegin("ListTodos", thrift.EXCEPTION, seqId)
-		x.Write(oprot)
-		oprot.WriteMessageEnd()
-		oprot.Flush(ctx)
-		return true, err2
-	} else {
-		result.Success = retval
-	}
-	if err2 = oprot.WriteMessageBegin("ListTodos", thrift.REPLY, seqId); err2 != nil {
-		err = err2
-	}
-	if err2 = result.Write(oprot); err == nil && err2 != nil {
-		err = err2
-	}
-	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
-		err = err2
-	}
-	if err2 = oprot.Flush(ctx); err == nil && err2 != nil {
-		err = err2
-	}
-	if err != nil {
-		return
-	}
-	return true, err
-}
-
-type memoGoServiceProcessorSearchTodos struct {
-	handler MemoGoService
-}
-
-func (p *memoGoServiceProcessorSearchTodos) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceSearchTodosArgs{}
-	if err = args.Read(iprot); err != nil {
-		iprot.ReadMessageEnd()
-		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
-		oprot.WriteMessageBegin("SearchTodos", thrift.EXCEPTION, seqId)
-		x.Write(oprot)
-		oprot.WriteMessageEnd()
-		oprot.Flush(ctx)
-		return false, err
-	}
-
-	iprot.ReadMessageEnd()
-	var err2 error
-	result := MemoGoServiceSearchTodosResult{}
-	var retval *SearchTodosResp
-	if retval, err2 = p.handler.SearchTodos(ctx, args.Req); err2 != nil {
-		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing SearchTodos: "+err2.Error())
-		oprot.WriteMessageBegin("SearchTodos", thrift.EXCEPTION, seqId)
-		x.Write(oprot)
-		oprot.WriteMessageEnd()
-		oprot.Flush(ctx)
-		return true, err2
-	} else {
-		result.Success = retval
-	}
-	if err2 = oprot.WriteMessageBegin("SearchTodos", thrift.REPLY, seqId); err2 != nil {
-		err = err2
-	}
-	if err2 = result.Write(oprot); err == nil && err2 != nil {
-		err = err2
-	}
-	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
-		err = err2
-	}
-	if err2 = oprot.Flush(ctx); err == nil && err2 != nil {
-		err = err2
-	}
-	if err != nil {
-		return
-	}
-	return true, err
-}
-
-type memoGoServiceProcessorListTodosCursor struct {
-	handler MemoGoService
-}
-
-func (p *memoGoServiceProcessorListTodosCursor) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceListTodosCursorArgs{}
-	if err = args.Read(iprot); err != nil {
-		iprot.ReadMessageEnd()
-		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
-		oprot.WriteMessageBegin("ListTodosCursor", thrift.EXCEPTION, seqId)
-		x.Write(oprot)
-		oprot.WriteMessageEnd()
-		oprot.Flush(ctx)
-		return false, err
-	}
-
-	iprot.ReadMessageEnd()
-	var err2 error
-	result := MemoGoServiceListTodosCursorResult{}
-	var retval *ListTodosCursorResp
-	if retval, err2 = p.handler.ListTodosCursor(ctx, args.Req); err2 != nil {
-		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing ListTodosCursor: "+err2.Error())
-		oprot.WriteMessageBegin("ListTodosCursor", thrift.EXCEPTION, seqId)
-		x.Write(oprot)
-		oprot.WriteMessageEnd()
-		oprot.Flush(ctx)
-		return true, err2
-	} else {
-		result.Success = retval
-	}
-	if err2 = oprot.WriteMessageBegin("ListTodosCursor", thrift.REPLY, seqId); err2 != nil {
-		err = err2
-	}
-	if err2 = result.Write(oprot); err == nil && err2 != nil {
-		err = err2
-	}
-	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
-		err = err2
-	}
-	if err2 = oprot.Flush(ctx); err == nil && err2 != nil {
-		err = err2
-	}
-	if err != nil {
-		return
-	}
-	return true, err
-}
-
-type memoGoServiceProcessorSearchTodosCursor struct {
-	handler MemoGoService
-}
-
-func (p *memoGoServiceProcessorSearchTodosCursor) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceSearchTodosCursorArgs{}
-	if err = args.Read(iprot); err != nil {
-		iprot.ReadMessageEnd()
-		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
-		oprot.WriteMessageBegin("SearchTodosCursor", thrift.EXCEPTION, seqId)
-		x.Write(oprot)
-		oprot.WriteMessageEnd()
-		oprot.Flush(ctx)
-		return false, err
-	}
-
-	iprot.ReadMessageEnd()
-	var err2 error
-	result := MemoGoServiceSearchTodosCursorResult{}
-	var retval *SearchTodosCursorResp
-	if retval, err2 = p.handler.SearchTodosCursor(ctx, args.Req); err2 != nil {
-		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing SearchTodosCursor: "+err2.Error())
-		oprot.WriteMessageBegin("SearchTodosCursor", thrift.EXCEPTION, seqId)
-		x.Write(oprot)
-		oprot.WriteMessageEnd()
-		oprot.Flush(ctx)
-		return true, err2
-	} else {
-		result.Success = retval
-	}
-	if err2 = oprot.WriteMessageBegin("SearchTodosCursor", thrift.REPLY, seqId); err2 != nil {
-		err = err2
-	}
-	if err2 = result.Write(oprot); err == nil && err2 != nil {
-		err = err2
-	}
-	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
-		err = err2
-	}
-	if err2 = oprot.Flush(ctx); err == nil && err2 != nil {
-		err = err2
-	}
-	if err != nil {
-		return
-	}
-	return true, err
-}
-
-type memoGoServiceProcessorDeleteOne struct {
-	handler MemoGoService
-}
-
-func (p *memoGoServiceProcessorDeleteOne) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceDeleteOneArgs{}
+func (p *todoManageServiceProcessorDeleteOne) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoManageServiceDeleteOneArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -7087,7 +7876,7 @@ func (p *memoGoServiceProcessorDeleteOne) Process(ctx context.Context, seqId int
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := MemoGoServiceDeleteOneResult{}
+	result := TodoManageServiceDeleteOneResult{}
 	var retval *DeleteResp
 	if retval, err2 = p.handler.DeleteOne(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing DeleteOne: "+err2.Error())
@@ -7117,12 +7906,12 @@ func (p *memoGoServiceProcessorDeleteOne) Process(ctx context.Context, seqId int
 	return true, err
 }
 
-type memoGoServiceProcessorDeleteByScope struct {
-	handler MemoGoService
+type todoManageServiceProcessorDeleteByScope struct {
+	handler TodoManageService
 }
 
-func (p *memoGoServiceProcessorDeleteByScope) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
-	args := MemoGoServiceDeleteByScopeArgs{}
+func (p *todoManageServiceProcessorDeleteByScope) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoManageServiceDeleteByScopeArgs{}
 	if err = args.Read(iprot); err != nil {
 		iprot.ReadMessageEnd()
 		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
@@ -7135,7 +7924,7 @@ func (p *memoGoServiceProcessorDeleteByScope) Process(ctx context.Context, seqId
 
 	iprot.ReadMessageEnd()
 	var err2 error
-	result := MemoGoServiceDeleteByScopeResult{}
+	result := TodoManageServiceDeleteByScopeResult{}
 	var retval *DeleteResp
 	if retval, err2 = p.handler.DeleteByScope(ctx, args.Req); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing DeleteByScope: "+err2.Error())
@@ -7165,917 +7954,35 @@ func (p *memoGoServiceProcessorDeleteByScope) Process(ctx context.Context, seqId
 	return true, err
 }
 
-type MemoGoServiceRegisterArgs struct {
-	Req *RegisterReq `thrift:"req,1"`
-}
-
-func NewMemoGoServiceRegisterArgs() *MemoGoServiceRegisterArgs {
-	return &MemoGoServiceRegisterArgs{}
-}
-
-func (p *MemoGoServiceRegisterArgs) InitDefault() {
-}
-
-var MemoGoServiceRegisterArgs_Req_DEFAULT *RegisterReq
-
-func (p *MemoGoServiceRegisterArgs) GetReq() (v *RegisterReq) {
-	if !p.IsSetReq() {
-		return MemoGoServiceRegisterArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-var fieldIDToName_MemoGoServiceRegisterArgs = map[int16]string{
-	1: "req",
-}
-
-func (p *MemoGoServiceRegisterArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *MemoGoServiceRegisterArgs) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 1:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField1(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceRegisterArgs[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceRegisterArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewRegisterReq()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Req = _field
-	return nil
-}
-
-func (p *MemoGoServiceRegisterArgs) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("Register_args"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField1(oprot); err != nil {
-			fieldId = 1
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceRegisterArgs) writeField1(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
-		goto WriteFieldBeginError
-	}
-	if err := p.Req.Write(oprot); err != nil {
-		return err
-	}
-	if err = oprot.WriteFieldEnd(); err != nil {
-		goto WriteFieldEndError
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
-}
-
-func (p *MemoGoServiceRegisterArgs) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceRegisterArgs(%+v)", *p)
-
-}
-
-type MemoGoServiceRegisterResult struct {
-	Success *AuthResp `thrift:"success,0,optional"`
-}
-
-func NewMemoGoServiceRegisterResult() *MemoGoServiceRegisterResult {
-	return &MemoGoServiceRegisterResult{}
-}
-
-func (p *MemoGoServiceRegisterResult) InitDefault() {
-}
-
-var MemoGoServiceRegisterResult_Success_DEFAULT *AuthResp
-
-func (p *MemoGoServiceRegisterResult) GetSuccess() (v *AuthResp) {
-	if !p.IsSetSuccess() {
-		return MemoGoServiceRegisterResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-var fieldIDToName_MemoGoServiceRegisterResult = map[int16]string{
-	0: "success",
-}
-
-func (p *MemoGoServiceRegisterResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *MemoGoServiceRegisterResult) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 0:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField0(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceRegisterResult[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceRegisterResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewAuthResp()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Success = _field
-	return nil
-}
-
-func (p *MemoGoServiceRegisterResult) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("Register_result"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField0(oprot); err != nil {
-			fieldId = 0
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceRegisterResult) writeField0(oprot thrift.TProtocol) (err error) {
-	if p.IsSetSuccess() {
-		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
-			goto WriteFieldBeginError
-		}
-		if err := p.Success.Write(oprot); err != nil {
-			return err
-		}
-		if err = oprot.WriteFieldEnd(); err != nil {
-			goto WriteFieldEndError
-		}
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
-}
-
-func (p *MemoGoServiceRegisterResult) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceRegisterResult(%+v)", *p)
-
-}
-
-type MemoGoServiceLoginArgs struct {
-	Req *LoginReq `thrift:"req,1"`
-}
-
-func NewMemoGoServiceLoginArgs() *MemoGoServiceLoginArgs {
-	return &MemoGoServiceLoginArgs{}
-}
-
-func (p *MemoGoServiceLoginArgs) InitDefault() {
-}
-
-var MemoGoServiceLoginArgs_Req_DEFAULT *LoginReq
-
-func (p *MemoGoServiceLoginArgs) GetReq() (v *LoginReq) {
-	if !p.IsSetReq() {
-		return MemoGoServiceLoginArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-var fieldIDToName_MemoGoServiceLoginArgs = map[int16]string{
-	1: "req",
-}
-
-func (p *MemoGoServiceLoginArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *MemoGoServiceLoginArgs) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 1:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField1(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceLoginArgs[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceLoginArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewLoginReq()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Req = _field
-	return nil
-}
-
-func (p *MemoGoServiceLoginArgs) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("Login_args"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField1(oprot); err != nil {
-			fieldId = 1
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceLoginArgs) writeField1(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
-		goto WriteFieldBeginError
-	}
-	if err := p.Req.Write(oprot); err != nil {
-		return err
-	}
-	if err = oprot.WriteFieldEnd(); err != nil {
-		goto WriteFieldEndError
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
-}
-
-func (p *MemoGoServiceLoginArgs) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceLoginArgs(%+v)", *p)
-
-}
-
-type MemoGoServiceLoginResult struct {
-	Success *AuthResp `thrift:"success,0,optional"`
-}
-
-func NewMemoGoServiceLoginResult() *MemoGoServiceLoginResult {
-	return &MemoGoServiceLoginResult{}
-}
-
-func (p *MemoGoServiceLoginResult) InitDefault() {
-}
-
-var MemoGoServiceLoginResult_Success_DEFAULT *AuthResp
-
-func (p *MemoGoServiceLoginResult) GetSuccess() (v *AuthResp) {
-	if !p.IsSetSuccess() {
-		return MemoGoServiceLoginResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-var fieldIDToName_MemoGoServiceLoginResult = map[int16]string{
-	0: "success",
-}
-
-func (p *MemoGoServiceLoginResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *MemoGoServiceLoginResult) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 0:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField0(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceLoginResult[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceLoginResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewAuthResp()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Success = _field
-	return nil
-}
-
-func (p *MemoGoServiceLoginResult) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("Login_result"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField0(oprot); err != nil {
-			fieldId = 0
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceLoginResult) writeField0(oprot thrift.TProtocol) (err error) {
-	if p.IsSetSuccess() {
-		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
-			goto WriteFieldBeginError
-		}
-		if err := p.Success.Write(oprot); err != nil {
-			return err
-		}
-		if err = oprot.WriteFieldEnd(); err != nil {
-			goto WriteFieldEndError
-		}
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
-}
-
-func (p *MemoGoServiceLoginResult) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceLoginResult(%+v)", *p)
-
-}
-
-type MemoGoServiceRefreshTokenArgs struct {
-	Req *RefreshReq `thrift:"req,1"`
-}
-
-func NewMemoGoServiceRefreshTokenArgs() *MemoGoServiceRefreshTokenArgs {
-	return &MemoGoServiceRefreshTokenArgs{}
-}
-
-func (p *MemoGoServiceRefreshTokenArgs) InitDefault() {
-}
-
-var MemoGoServiceRefreshTokenArgs_Req_DEFAULT *RefreshReq
-
-func (p *MemoGoServiceRefreshTokenArgs) GetReq() (v *RefreshReq) {
-	if !p.IsSetReq() {
-		return MemoGoServiceRefreshTokenArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-var fieldIDToName_MemoGoServiceRefreshTokenArgs = map[int16]string{
-	1: "req",
-}
-
-func (p *MemoGoServiceRefreshTokenArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *MemoGoServiceRefreshTokenArgs) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 1:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField1(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceRefreshTokenArgs[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceRefreshTokenArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewRefreshReq()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Req = _field
-	return nil
-}
-
-func (p *MemoGoServiceRefreshTokenArgs) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("RefreshToken_args"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField1(oprot); err != nil {
-			fieldId = 1
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceRefreshTokenArgs) writeField1(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
-		goto WriteFieldBeginError
-	}
-	if err := p.Req.Write(oprot); err != nil {
-		return err
-	}
-	if err = oprot.WriteFieldEnd(); err != nil {
-		goto WriteFieldEndError
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
-}
-
-func (p *MemoGoServiceRefreshTokenArgs) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceRefreshTokenArgs(%+v)", *p)
-
-}
-
-type MemoGoServiceRefreshTokenResult struct {
-	Success *AuthResp `thrift:"success,0,optional"`
-}
-
-func NewMemoGoServiceRefreshTokenResult() *MemoGoServiceRefreshTokenResult {
-	return &MemoGoServiceRefreshTokenResult{}
-}
-
-func (p *MemoGoServiceRefreshTokenResult) InitDefault() {
-}
-
-var MemoGoServiceRefreshTokenResult_Success_DEFAULT *AuthResp
-
-func (p *MemoGoServiceRefreshTokenResult) GetSuccess() (v *AuthResp) {
-	if !p.IsSetSuccess() {
-		return MemoGoServiceRefreshTokenResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-var fieldIDToName_MemoGoServiceRefreshTokenResult = map[int16]string{
-	0: "success",
-}
-
-func (p *MemoGoServiceRefreshTokenResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *MemoGoServiceRefreshTokenResult) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 0:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField0(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceRefreshTokenResult[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceRefreshTokenResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewAuthResp()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Success = _field
-	return nil
-}
-
-func (p *MemoGoServiceRefreshTokenResult) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("RefreshToken_result"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField0(oprot); err != nil {
-			fieldId = 0
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceRefreshTokenResult) writeField0(oprot thrift.TProtocol) (err error) {
-	if p.IsSetSuccess() {
-		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
-			goto WriteFieldBeginError
-		}
-		if err := p.Success.Write(oprot); err != nil {
-			return err
-		}
-		if err = oprot.WriteFieldEnd(); err != nil {
-			goto WriteFieldEndError
-		}
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
-}
-
-func (p *MemoGoServiceRefreshTokenResult) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceRefreshTokenResult(%+v)", *p)
-
-}
-
-type MemoGoServiceCreateTodoArgs struct {
+type TodoManageServiceCreateTodoArgs struct {
 	Req *CreateTodoReq `thrift:"req,1"`
 }
 
-func NewMemoGoServiceCreateTodoArgs() *MemoGoServiceCreateTodoArgs {
-	return &MemoGoServiceCreateTodoArgs{}
+func NewTodoManageServiceCreateTodoArgs() *TodoManageServiceCreateTodoArgs {
+	return &TodoManageServiceCreateTodoArgs{}
 }
 
-func (p *MemoGoServiceCreateTodoArgs) InitDefault() {
+func (p *TodoManageServiceCreateTodoArgs) InitDefault() {
 }
 
-var MemoGoServiceCreateTodoArgs_Req_DEFAULT *CreateTodoReq
+var TodoManageServiceCreateTodoArgs_Req_DEFAULT *CreateTodoReq
 
-func (p *MemoGoServiceCreateTodoArgs) GetReq() (v *CreateTodoReq) {
+func (p *TodoManageServiceCreateTodoArgs) GetReq() (v *CreateTodoReq) {
 	if !p.IsSetReq() {
-		return MemoGoServiceCreateTodoArgs_Req_DEFAULT
+		return TodoManageServiceCreateTodoArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_MemoGoServiceCreateTodoArgs = map[int16]string{
+var fieldIDToName_TodoManageServiceCreateTodoArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *MemoGoServiceCreateTodoArgs) IsSetReq() bool {
+func (p *TodoManageServiceCreateTodoArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *MemoGoServiceCreateTodoArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceCreateTodoArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -8121,7 +8028,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceCreateTodoArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceCreateTodoArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -8131,7 +8038,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceCreateTodoArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceCreateTodoArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewCreateTodoReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -8140,7 +8047,7 @@ func (p *MemoGoServiceCreateTodoArgs) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *MemoGoServiceCreateTodoArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceCreateTodoArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("CreateTodo_args"); err != nil {
 		goto WriteStructBeginError
@@ -8168,7 +8075,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceCreateTodoArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceCreateTodoArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -8185,43 +8092,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *MemoGoServiceCreateTodoArgs) String() string {
+func (p *TodoManageServiceCreateTodoArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceCreateTodoArgs(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceCreateTodoArgs(%+v)", *p)
 
 }
 
-type MemoGoServiceCreateTodoResult struct {
+type TodoManageServiceCreateTodoResult struct {
 	Success *CreateTodoResp `thrift:"success,0,optional"`
 }
 
-func NewMemoGoServiceCreateTodoResult() *MemoGoServiceCreateTodoResult {
-	return &MemoGoServiceCreateTodoResult{}
+func NewTodoManageServiceCreateTodoResult() *TodoManageServiceCreateTodoResult {
+	return &TodoManageServiceCreateTodoResult{}
 }
 
-func (p *MemoGoServiceCreateTodoResult) InitDefault() {
+func (p *TodoManageServiceCreateTodoResult) InitDefault() {
 }
 
-var MemoGoServiceCreateTodoResult_Success_DEFAULT *CreateTodoResp
+var TodoManageServiceCreateTodoResult_Success_DEFAULT *CreateTodoResp
 
-func (p *MemoGoServiceCreateTodoResult) GetSuccess() (v *CreateTodoResp) {
+func (p *TodoManageServiceCreateTodoResult) GetSuccess() (v *CreateTodoResp) {
 	if !p.IsSetSuccess() {
-		return MemoGoServiceCreateTodoResult_Success_DEFAULT
+		return TodoManageServiceCreateTodoResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_MemoGoServiceCreateTodoResult = map[int16]string{
+var fieldIDToName_TodoManageServiceCreateTodoResult = map[int16]string{
 	0: "success",
 }
 
-func (p *MemoGoServiceCreateTodoResult) IsSetSuccess() bool {
+func (p *TodoManageServiceCreateTodoResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *MemoGoServiceCreateTodoResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceCreateTodoResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -8267,7 +8174,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceCreateTodoResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceCreateTodoResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -8277,7 +8184,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceCreateTodoResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceCreateTodoResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewCreateTodoResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -8286,7 +8193,7 @@ func (p *MemoGoServiceCreateTodoResult) ReadField0(iprot thrift.TProtocol) error
 	return nil
 }
 
-func (p *MemoGoServiceCreateTodoResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceCreateTodoResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("CreateTodo_result"); err != nil {
 		goto WriteStructBeginError
@@ -8314,7 +8221,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceCreateTodoResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceCreateTodoResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -8333,43 +8240,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *MemoGoServiceCreateTodoResult) String() string {
+func (p *TodoManageServiceCreateTodoResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceCreateTodoResult(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceCreateTodoResult(%+v)", *p)
 
 }
 
-type MemoGoServiceUpdateTodoStatusArgs struct {
+type TodoManageServiceUpdateTodoStatusArgs struct {
 	Req *UpdateTodoStatusReq `thrift:"req,1"`
 }
 
-func NewMemoGoServiceUpdateTodoStatusArgs() *MemoGoServiceUpdateTodoStatusArgs {
-	return &MemoGoServiceUpdateTodoStatusArgs{}
+func NewTodoManageServiceUpdateTodoStatusArgs() *TodoManageServiceUpdateTodoStatusArgs {
+	return &TodoManageServiceUpdateTodoStatusArgs{}
 }
 
-func (p *MemoGoServiceUpdateTodoStatusArgs) InitDefault() {
+func (p *TodoManageServiceUpdateTodoStatusArgs) InitDefault() {
 }
 
-var MemoGoServiceUpdateTodoStatusArgs_Req_DEFAULT *UpdateTodoStatusReq
+var TodoManageServiceUpdateTodoStatusArgs_Req_DEFAULT *UpdateTodoStatusReq
 
-func (p *MemoGoServiceUpdateTodoStatusArgs) GetReq() (v *UpdateTodoStatusReq) {
+func (p *TodoManageServiceUpdateTodoStatusArgs) GetReq() (v *UpdateTodoStatusReq) {
 	if !p.IsSetReq() {
-		return MemoGoServiceUpdateTodoStatusArgs_Req_DEFAULT
+		return TodoManageServiceUpdateTodoStatusArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_MemoGoServiceUpdateTodoStatusArgs = map[int16]string{
+var fieldIDToName_TodoManageServiceUpdateTodoStatusArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *MemoGoServiceUpdateTodoStatusArgs) IsSetReq() bool {
+func (p *TodoManageServiceUpdateTodoStatusArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *MemoGoServiceUpdateTodoStatusArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateTodoStatusArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -8415,7 +8322,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceUpdateTodoStatusArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceUpdateTodoStatusArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -8425,7 +8332,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateTodoStatusArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceUpdateTodoStatusArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewUpdateTodoStatusReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -8434,7 +8341,7 @@ func (p *MemoGoServiceUpdateTodoStatusArgs) ReadField1(iprot thrift.TProtocol) e
 	return nil
 }
 
-func (p *MemoGoServiceUpdateTodoStatusArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateTodoStatusArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("UpdateTodoStatus_args"); err != nil {
 		goto WriteStructBeginError
@@ -8462,7 +8369,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateTodoStatusArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateTodoStatusArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -8479,43 +8386,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateTodoStatusArgs) String() string {
+func (p *TodoManageServiceUpdateTodoStatusArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceUpdateTodoStatusArgs(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceUpdateTodoStatusArgs(%+v)", *p)
 
 }
 
-type MemoGoServiceUpdateTodoStatusResult struct {
+type TodoManageServiceUpdateTodoStatusResult struct {
 	Success *UpdateTodoStatusResp `thrift:"success,0,optional"`
 }
 
-func NewMemoGoServiceUpdateTodoStatusResult() *MemoGoServiceUpdateTodoStatusResult {
-	return &MemoGoServiceUpdateTodoStatusResult{}
+func NewTodoManageServiceUpdateTodoStatusResult() *TodoManageServiceUpdateTodoStatusResult {
+	return &TodoManageServiceUpdateTodoStatusResult{}
 }
 
-func (p *MemoGoServiceUpdateTodoStatusResult) InitDefault() {
+func (p *TodoManageServiceUpdateTodoStatusResult) InitDefault() {
 }
 
-var MemoGoServiceUpdateTodoStatusResult_Success_DEFAULT *UpdateTodoStatusResp
+var TodoManageServiceUpdateTodoStatusResult_Success_DEFAULT *UpdateTodoStatusResp
 
-func (p *MemoGoServiceUpdateTodoStatusResult) GetSuccess() (v *UpdateTodoStatusResp) {
+func (p *TodoManageServiceUpdateTodoStatusResult) GetSuccess() (v *UpdateTodoStatusResp) {
 	if !p.IsSetSuccess() {
-		return MemoGoServiceUpdateTodoStatusResult_Success_DEFAULT
+		return TodoManageServiceUpdateTodoStatusResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_MemoGoServiceUpdateTodoStatusResult = map[int16]string{
+var fieldIDToName_TodoManageServiceUpdateTodoStatusResult = map[int16]string{
 	0: "success",
 }
 
-func (p *MemoGoServiceUpdateTodoStatusResult) IsSetSuccess() bool {
+func (p *TodoManageServiceUpdateTodoStatusResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *MemoGoServiceUpdateTodoStatusResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateTodoStatusResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -8561,7 +8468,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceUpdateTodoStatusResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceUpdateTodoStatusResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -8571,7 +8478,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateTodoStatusResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceUpdateTodoStatusResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewUpdateTodoStatusResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -8580,7 +8487,7 @@ func (p *MemoGoServiceUpdateTodoStatusResult) ReadField0(iprot thrift.TProtocol)
 	return nil
 }
 
-func (p *MemoGoServiceUpdateTodoStatusResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateTodoStatusResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("UpdateTodoStatus_result"); err != nil {
 		goto WriteStructBeginError
@@ -8608,7 +8515,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateTodoStatusResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateTodoStatusResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -8627,43 +8534,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateTodoStatusResult) String() string {
+func (p *TodoManageServiceUpdateTodoStatusResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceUpdateTodoStatusResult(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceUpdateTodoStatusResult(%+v)", *p)
 
 }
 
-type MemoGoServiceUpdateAllStatusArgs struct {
+type TodoManageServiceUpdateAllStatusArgs struct {
 	Req *UpdateAllStatusReq `thrift:"req,1"`
 }
 
-func NewMemoGoServiceUpdateAllStatusArgs() *MemoGoServiceUpdateAllStatusArgs {
-	return &MemoGoServiceUpdateAllStatusArgs{}
+func NewTodoManageServiceUpdateAllStatusArgs() *TodoManageServiceUpdateAllStatusArgs {
+	return &TodoManageServiceUpdateAllStatusArgs{}
 }
 
-func (p *MemoGoServiceUpdateAllStatusArgs) InitDefault() {
+func (p *TodoManageServiceUpdateAllStatusArgs) InitDefault() {
 }
 
-var MemoGoServiceUpdateAllStatusArgs_Req_DEFAULT *UpdateAllStatusReq
+var TodoManageServiceUpdateAllStatusArgs_Req_DEFAULT *UpdateAllStatusReq
 
-func (p *MemoGoServiceUpdateAllStatusArgs) GetReq() (v *UpdateAllStatusReq) {
+func (p *TodoManageServiceUpdateAllStatusArgs) GetReq() (v *UpdateAllStatusReq) {
 	if !p.IsSetReq() {
-		return MemoGoServiceUpdateAllStatusArgs_Req_DEFAULT
+		return TodoManageServiceUpdateAllStatusArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_MemoGoServiceUpdateAllStatusArgs = map[int16]string{
+var fieldIDToName_TodoManageServiceUpdateAllStatusArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *MemoGoServiceUpdateAllStatusArgs) IsSetReq() bool {
+func (p *TodoManageServiceUpdateAllStatusArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *MemoGoServiceUpdateAllStatusArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateAllStatusArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -8709,7 +8616,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceUpdateAllStatusArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceUpdateAllStatusArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -8719,7 +8626,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateAllStatusArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceUpdateAllStatusArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewUpdateAllStatusReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -8728,7 +8635,7 @@ func (p *MemoGoServiceUpdateAllStatusArgs) ReadField1(iprot thrift.TProtocol) er
 	return nil
 }
 
-func (p *MemoGoServiceUpdateAllStatusArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateAllStatusArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("UpdateAllStatus_args"); err != nil {
 		goto WriteStructBeginError
@@ -8756,7 +8663,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateAllStatusArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateAllStatusArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -8773,43 +8680,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateAllStatusArgs) String() string {
+func (p *TodoManageServiceUpdateAllStatusArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceUpdateAllStatusArgs(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceUpdateAllStatusArgs(%+v)", *p)
 
 }
 
-type MemoGoServiceUpdateAllStatusResult struct {
+type TodoManageServiceUpdateAllStatusResult struct {
 	Success *UpdateAllStatusResp `thrift:"success,0,optional"`
 }
 
-func NewMemoGoServiceUpdateAllStatusResult() *MemoGoServiceUpdateAllStatusResult {
-	return &MemoGoServiceUpdateAllStatusResult{}
+func NewTodoManageServiceUpdateAllStatusResult() *TodoManageServiceUpdateAllStatusResult {
+	return &TodoManageServiceUpdateAllStatusResult{}
 }
 
-func (p *MemoGoServiceUpdateAllStatusResult) InitDefault() {
+func (p *TodoManageServiceUpdateAllStatusResult) InitDefault() {
 }
 
-var MemoGoServiceUpdateAllStatusResult_Success_DEFAULT *UpdateAllStatusResp
+var TodoManageServiceUpdateAllStatusResult_Success_DEFAULT *UpdateAllStatusResp
 
-func (p *MemoGoServiceUpdateAllStatusResult) GetSuccess() (v *UpdateAllStatusResp) {
+func (p *TodoManageServiceUpdateAllStatusResult) GetSuccess() (v *UpdateAllStatusResp) {
 	if !p.IsSetSuccess() {
-		return MemoGoServiceUpdateAllStatusResult_Success_DEFAULT
+		return TodoManageServiceUpdateAllStatusResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_MemoGoServiceUpdateAllStatusResult = map[int16]string{
+var fieldIDToName_TodoManageServiceUpdateAllStatusResult = map[int16]string{
 	0: "success",
 }
 
-func (p *MemoGoServiceUpdateAllStatusResult) IsSetSuccess() bool {
+func (p *TodoManageServiceUpdateAllStatusResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *MemoGoServiceUpdateAllStatusResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateAllStatusResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -8855,7 +8762,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceUpdateAllStatusResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceUpdateAllStatusResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -8865,7 +8772,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateAllStatusResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceUpdateAllStatusResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewUpdateAllStatusResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -8874,7 +8781,7 @@ func (p *MemoGoServiceUpdateAllStatusResult) ReadField0(iprot thrift.TProtocol) 
 	return nil
 }
 
-func (p *MemoGoServiceUpdateAllStatusResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateAllStatusResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("UpdateAllStatus_result"); err != nil {
 		goto WriteStructBeginError
@@ -8902,7 +8809,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateAllStatusResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceUpdateAllStatusResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -8921,1219 +8828,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *MemoGoServiceUpdateAllStatusResult) String() string {
+func (p *TodoManageServiceUpdateAllStatusResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceUpdateAllStatusResult(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceUpdateAllStatusResult(%+v)", *p)
 
 }
 
-type MemoGoServiceListTodosArgs struct {
-	Req *ListTodosReq `thrift:"req,1"`
-}
-
-func NewMemoGoServiceListTodosArgs() *MemoGoServiceListTodosArgs {
-	return &MemoGoServiceListTodosArgs{}
-}
-
-func (p *MemoGoServiceListTodosArgs) InitDefault() {
-}
-
-var MemoGoServiceListTodosArgs_Req_DEFAULT *ListTodosReq
-
-func (p *MemoGoServiceListTodosArgs) GetReq() (v *ListTodosReq) {
-	if !p.IsSetReq() {
-		return MemoGoServiceListTodosArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-var fieldIDToName_MemoGoServiceListTodosArgs = map[int16]string{
-	1: "req",
-}
-
-func (p *MemoGoServiceListTodosArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *MemoGoServiceListTodosArgs) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 1:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField1(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceListTodosArgs[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewListTodosReq()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Req = _field
-	return nil
-}
-
-func (p *MemoGoServiceListTodosArgs) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("ListTodos_args"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField1(oprot); err != nil {
-			fieldId = 1
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosArgs) writeField1(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
-		goto WriteFieldBeginError
-	}
-	if err := p.Req.Write(oprot); err != nil {
-		return err
-	}
-	if err = oprot.WriteFieldEnd(); err != nil {
-		goto WriteFieldEndError
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosArgs) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceListTodosArgs(%+v)", *p)
-
-}
-
-type MemoGoServiceListTodosResult struct {
-	Success *ListTodosResp `thrift:"success,0,optional"`
-}
-
-func NewMemoGoServiceListTodosResult() *MemoGoServiceListTodosResult {
-	return &MemoGoServiceListTodosResult{}
-}
-
-func (p *MemoGoServiceListTodosResult) InitDefault() {
-}
-
-var MemoGoServiceListTodosResult_Success_DEFAULT *ListTodosResp
-
-func (p *MemoGoServiceListTodosResult) GetSuccess() (v *ListTodosResp) {
-	if !p.IsSetSuccess() {
-		return MemoGoServiceListTodosResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-var fieldIDToName_MemoGoServiceListTodosResult = map[int16]string{
-	0: "success",
-}
-
-func (p *MemoGoServiceListTodosResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *MemoGoServiceListTodosResult) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 0:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField0(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceListTodosResult[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewListTodosResp()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Success = _field
-	return nil
-}
-
-func (p *MemoGoServiceListTodosResult) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("ListTodos_result"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField0(oprot); err != nil {
-			fieldId = 0
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosResult) writeField0(oprot thrift.TProtocol) (err error) {
-	if p.IsSetSuccess() {
-		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
-			goto WriteFieldBeginError
-		}
-		if err := p.Success.Write(oprot); err != nil {
-			return err
-		}
-		if err = oprot.WriteFieldEnd(); err != nil {
-			goto WriteFieldEndError
-		}
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosResult) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceListTodosResult(%+v)", *p)
-
-}
-
-type MemoGoServiceSearchTodosArgs struct {
-	Req *SearchTodosReq `thrift:"req,1"`
-}
-
-func NewMemoGoServiceSearchTodosArgs() *MemoGoServiceSearchTodosArgs {
-	return &MemoGoServiceSearchTodosArgs{}
-}
-
-func (p *MemoGoServiceSearchTodosArgs) InitDefault() {
-}
-
-var MemoGoServiceSearchTodosArgs_Req_DEFAULT *SearchTodosReq
-
-func (p *MemoGoServiceSearchTodosArgs) GetReq() (v *SearchTodosReq) {
-	if !p.IsSetReq() {
-		return MemoGoServiceSearchTodosArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-var fieldIDToName_MemoGoServiceSearchTodosArgs = map[int16]string{
-	1: "req",
-}
-
-func (p *MemoGoServiceSearchTodosArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *MemoGoServiceSearchTodosArgs) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 1:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField1(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceSearchTodosArgs[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewSearchTodosReq()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Req = _field
-	return nil
-}
-
-func (p *MemoGoServiceSearchTodosArgs) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("SearchTodos_args"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField1(oprot); err != nil {
-			fieldId = 1
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosArgs) writeField1(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
-		goto WriteFieldBeginError
-	}
-	if err := p.Req.Write(oprot); err != nil {
-		return err
-	}
-	if err = oprot.WriteFieldEnd(); err != nil {
-		goto WriteFieldEndError
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosArgs) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceSearchTodosArgs(%+v)", *p)
-
-}
-
-type MemoGoServiceSearchTodosResult struct {
-	Success *SearchTodosResp `thrift:"success,0,optional"`
-}
-
-func NewMemoGoServiceSearchTodosResult() *MemoGoServiceSearchTodosResult {
-	return &MemoGoServiceSearchTodosResult{}
-}
-
-func (p *MemoGoServiceSearchTodosResult) InitDefault() {
-}
-
-var MemoGoServiceSearchTodosResult_Success_DEFAULT *SearchTodosResp
-
-func (p *MemoGoServiceSearchTodosResult) GetSuccess() (v *SearchTodosResp) {
-	if !p.IsSetSuccess() {
-		return MemoGoServiceSearchTodosResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-var fieldIDToName_MemoGoServiceSearchTodosResult = map[int16]string{
-	0: "success",
-}
-
-func (p *MemoGoServiceSearchTodosResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *MemoGoServiceSearchTodosResult) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 0:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField0(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceSearchTodosResult[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewSearchTodosResp()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Success = _field
-	return nil
-}
-
-func (p *MemoGoServiceSearchTodosResult) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("SearchTodos_result"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField0(oprot); err != nil {
-			fieldId = 0
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosResult) writeField0(oprot thrift.TProtocol) (err error) {
-	if p.IsSetSuccess() {
-		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
-			goto WriteFieldBeginError
-		}
-		if err := p.Success.Write(oprot); err != nil {
-			return err
-		}
-		if err = oprot.WriteFieldEnd(); err != nil {
-			goto WriteFieldEndError
-		}
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosResult) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceSearchTodosResult(%+v)", *p)
-
-}
-
-type MemoGoServiceListTodosCursorArgs struct {
-	Req *ListTodosCursorReq `thrift:"req,1"`
-}
-
-func NewMemoGoServiceListTodosCursorArgs() *MemoGoServiceListTodosCursorArgs {
-	return &MemoGoServiceListTodosCursorArgs{}
-}
-
-func (p *MemoGoServiceListTodosCursorArgs) InitDefault() {
-}
-
-var MemoGoServiceListTodosCursorArgs_Req_DEFAULT *ListTodosCursorReq
-
-func (p *MemoGoServiceListTodosCursorArgs) GetReq() (v *ListTodosCursorReq) {
-	if !p.IsSetReq() {
-		return MemoGoServiceListTodosCursorArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-var fieldIDToName_MemoGoServiceListTodosCursorArgs = map[int16]string{
-	1: "req",
-}
-
-func (p *MemoGoServiceListTodosCursorArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *MemoGoServiceListTodosCursorArgs) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 1:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField1(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceListTodosCursorArgs[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosCursorArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewListTodosCursorReq()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Req = _field
-	return nil
-}
-
-func (p *MemoGoServiceListTodosCursorArgs) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("ListTodosCursor_args"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField1(oprot); err != nil {
-			fieldId = 1
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosCursorArgs) writeField1(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
-		goto WriteFieldBeginError
-	}
-	if err := p.Req.Write(oprot); err != nil {
-		return err
-	}
-	if err = oprot.WriteFieldEnd(); err != nil {
-		goto WriteFieldEndError
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosCursorArgs) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceListTodosCursorArgs(%+v)", *p)
-
-}
-
-type MemoGoServiceListTodosCursorResult struct {
-	Success *ListTodosCursorResp `thrift:"success,0,optional"`
-}
-
-func NewMemoGoServiceListTodosCursorResult() *MemoGoServiceListTodosCursorResult {
-	return &MemoGoServiceListTodosCursorResult{}
-}
-
-func (p *MemoGoServiceListTodosCursorResult) InitDefault() {
-}
-
-var MemoGoServiceListTodosCursorResult_Success_DEFAULT *ListTodosCursorResp
-
-func (p *MemoGoServiceListTodosCursorResult) GetSuccess() (v *ListTodosCursorResp) {
-	if !p.IsSetSuccess() {
-		return MemoGoServiceListTodosCursorResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-var fieldIDToName_MemoGoServiceListTodosCursorResult = map[int16]string{
-	0: "success",
-}
-
-func (p *MemoGoServiceListTodosCursorResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *MemoGoServiceListTodosCursorResult) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 0:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField0(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceListTodosCursorResult[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosCursorResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewListTodosCursorResp()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Success = _field
-	return nil
-}
-
-func (p *MemoGoServiceListTodosCursorResult) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("ListTodosCursor_result"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField0(oprot); err != nil {
-			fieldId = 0
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosCursorResult) writeField0(oprot thrift.TProtocol) (err error) {
-	if p.IsSetSuccess() {
-		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
-			goto WriteFieldBeginError
-		}
-		if err := p.Success.Write(oprot); err != nil {
-			return err
-		}
-		if err = oprot.WriteFieldEnd(); err != nil {
-			goto WriteFieldEndError
-		}
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
-}
-
-func (p *MemoGoServiceListTodosCursorResult) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceListTodosCursorResult(%+v)", *p)
-
-}
-
-type MemoGoServiceSearchTodosCursorArgs struct {
-	Req *SearchTodosCursorReq `thrift:"req,1"`
-}
-
-func NewMemoGoServiceSearchTodosCursorArgs() *MemoGoServiceSearchTodosCursorArgs {
-	return &MemoGoServiceSearchTodosCursorArgs{}
-}
-
-func (p *MemoGoServiceSearchTodosCursorArgs) InitDefault() {
-}
-
-var MemoGoServiceSearchTodosCursorArgs_Req_DEFAULT *SearchTodosCursorReq
-
-func (p *MemoGoServiceSearchTodosCursorArgs) GetReq() (v *SearchTodosCursorReq) {
-	if !p.IsSetReq() {
-		return MemoGoServiceSearchTodosCursorArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-var fieldIDToName_MemoGoServiceSearchTodosCursorArgs = map[int16]string{
-	1: "req",
-}
-
-func (p *MemoGoServiceSearchTodosCursorArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *MemoGoServiceSearchTodosCursorArgs) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 1:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField1(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceSearchTodosCursorArgs[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosCursorArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewSearchTodosCursorReq()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Req = _field
-	return nil
-}
-
-func (p *MemoGoServiceSearchTodosCursorArgs) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("SearchTodosCursor_args"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField1(oprot); err != nil {
-			fieldId = 1
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosCursorArgs) writeField1(oprot thrift.TProtocol) (err error) {
-	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
-		goto WriteFieldBeginError
-	}
-	if err := p.Req.Write(oprot); err != nil {
-		return err
-	}
-	if err = oprot.WriteFieldEnd(); err != nil {
-		goto WriteFieldEndError
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosCursorArgs) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceSearchTodosCursorArgs(%+v)", *p)
-
-}
-
-type MemoGoServiceSearchTodosCursorResult struct {
-	Success *SearchTodosCursorResp `thrift:"success,0,optional"`
-}
-
-func NewMemoGoServiceSearchTodosCursorResult() *MemoGoServiceSearchTodosCursorResult {
-	return &MemoGoServiceSearchTodosCursorResult{}
-}
-
-func (p *MemoGoServiceSearchTodosCursorResult) InitDefault() {
-}
-
-var MemoGoServiceSearchTodosCursorResult_Success_DEFAULT *SearchTodosCursorResp
-
-func (p *MemoGoServiceSearchTodosCursorResult) GetSuccess() (v *SearchTodosCursorResp) {
-	if !p.IsSetSuccess() {
-		return MemoGoServiceSearchTodosCursorResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-var fieldIDToName_MemoGoServiceSearchTodosCursorResult = map[int16]string{
-	0: "success",
-}
-
-func (p *MemoGoServiceSearchTodosCursorResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *MemoGoServiceSearchTodosCursorResult) Read(iprot thrift.TProtocol) (err error) {
-
-	var fieldTypeId thrift.TType
-	var fieldId int16
-
-	if _, err = iprot.ReadStructBegin(); err != nil {
-		goto ReadStructBeginError
-	}
-
-	for {
-		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
-		if err != nil {
-			goto ReadFieldBeginError
-		}
-		if fieldTypeId == thrift.STOP {
-			break
-		}
-
-		switch fieldId {
-		case 0:
-			if fieldTypeId == thrift.STRUCT {
-				if err = p.ReadField0(iprot); err != nil {
-					goto ReadFieldError
-				}
-			} else if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		default:
-			if err = iprot.Skip(fieldTypeId); err != nil {
-				goto SkipFieldError
-			}
-		}
-		if err = iprot.ReadFieldEnd(); err != nil {
-			goto ReadFieldEndError
-		}
-	}
-	if err = iprot.ReadStructEnd(); err != nil {
-		goto ReadStructEndError
-	}
-
-	return nil
-ReadStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
-ReadFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
-ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceSearchTodosCursorResult[fieldId]), err)
-SkipFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
-
-ReadFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
-ReadStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosCursorResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewSearchTodosCursorResp()
-	if err := _field.Read(iprot); err != nil {
-		return err
-	}
-	p.Success = _field
-	return nil
-}
-
-func (p *MemoGoServiceSearchTodosCursorResult) Write(oprot thrift.TProtocol) (err error) {
-	var fieldId int16
-	if err = oprot.WriteStructBegin("SearchTodosCursor_result"); err != nil {
-		goto WriteStructBeginError
-	}
-	if p != nil {
-		if err = p.writeField0(oprot); err != nil {
-			fieldId = 0
-			goto WriteFieldError
-		}
-	}
-	if err = oprot.WriteFieldStop(); err != nil {
-		goto WriteFieldStopError
-	}
-	if err = oprot.WriteStructEnd(); err != nil {
-		goto WriteStructEndError
-	}
-	return nil
-WriteStructBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
-WriteFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
-WriteFieldStopError:
-	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
-WriteStructEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosCursorResult) writeField0(oprot thrift.TProtocol) (err error) {
-	if p.IsSetSuccess() {
-		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
-			goto WriteFieldBeginError
-		}
-		if err := p.Success.Write(oprot); err != nil {
-			return err
-		}
-		if err = oprot.WriteFieldEnd(); err != nil {
-			goto WriteFieldEndError
-		}
-	}
-	return nil
-WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
-WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
-}
-
-func (p *MemoGoServiceSearchTodosCursorResult) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	return fmt.Sprintf("MemoGoServiceSearchTodosCursorResult(%+v)", *p)
-
-}
-
-type MemoGoServiceDeleteOneArgs struct {
+type TodoManageServiceDeleteOneArgs struct {
 	Req *DeleteOneReq `thrift:"req,1"`
 }
 
-func NewMemoGoServiceDeleteOneArgs() *MemoGoServiceDeleteOneArgs {
-	return &MemoGoServiceDeleteOneArgs{}
+func NewTodoManageServiceDeleteOneArgs() *TodoManageServiceDeleteOneArgs {
+	return &TodoManageServiceDeleteOneArgs{}
 }
 
-func (p *MemoGoServiceDeleteOneArgs) InitDefault() {
+func (p *TodoManageServiceDeleteOneArgs) InitDefault() {
 }
 
-var MemoGoServiceDeleteOneArgs_Req_DEFAULT *DeleteOneReq
+var TodoManageServiceDeleteOneArgs_Req_DEFAULT *DeleteOneReq
 
-func (p *MemoGoServiceDeleteOneArgs) GetReq() (v *DeleteOneReq) {
+func (p *TodoManageServiceDeleteOneArgs) GetReq() (v *DeleteOneReq) {
 	if !p.IsSetReq() {
-		return MemoGoServiceDeleteOneArgs_Req_DEFAULT
+		return TodoManageServiceDeleteOneArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_MemoGoServiceDeleteOneArgs = map[int16]string{
+var fieldIDToName_TodoManageServiceDeleteOneArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *MemoGoServiceDeleteOneArgs) IsSetReq() bool {
+func (p *TodoManageServiceDeleteOneArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *MemoGoServiceDeleteOneArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteOneArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -10179,7 +8910,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceDeleteOneArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceDeleteOneArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -10189,7 +8920,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteOneArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceDeleteOneArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewDeleteOneReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -10198,7 +8929,7 @@ func (p *MemoGoServiceDeleteOneArgs) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *MemoGoServiceDeleteOneArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteOneArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("DeleteOne_args"); err != nil {
 		goto WriteStructBeginError
@@ -10226,7 +8957,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteOneArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteOneArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -10243,43 +8974,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteOneArgs) String() string {
+func (p *TodoManageServiceDeleteOneArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceDeleteOneArgs(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceDeleteOneArgs(%+v)", *p)
 
 }
 
-type MemoGoServiceDeleteOneResult struct {
+type TodoManageServiceDeleteOneResult struct {
 	Success *DeleteResp `thrift:"success,0,optional"`
 }
 
-func NewMemoGoServiceDeleteOneResult() *MemoGoServiceDeleteOneResult {
-	return &MemoGoServiceDeleteOneResult{}
+func NewTodoManageServiceDeleteOneResult() *TodoManageServiceDeleteOneResult {
+	return &TodoManageServiceDeleteOneResult{}
 }
 
-func (p *MemoGoServiceDeleteOneResult) InitDefault() {
+func (p *TodoManageServiceDeleteOneResult) InitDefault() {
 }
 
-var MemoGoServiceDeleteOneResult_Success_DEFAULT *DeleteResp
+var TodoManageServiceDeleteOneResult_Success_DEFAULT *DeleteResp
 
-func (p *MemoGoServiceDeleteOneResult) GetSuccess() (v *DeleteResp) {
+func (p *TodoManageServiceDeleteOneResult) GetSuccess() (v *DeleteResp) {
 	if !p.IsSetSuccess() {
-		return MemoGoServiceDeleteOneResult_Success_DEFAULT
+		return TodoManageServiceDeleteOneResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_MemoGoServiceDeleteOneResult = map[int16]string{
+var fieldIDToName_TodoManageServiceDeleteOneResult = map[int16]string{
 	0: "success",
 }
 
-func (p *MemoGoServiceDeleteOneResult) IsSetSuccess() bool {
+func (p *TodoManageServiceDeleteOneResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *MemoGoServiceDeleteOneResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteOneResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -10325,7 +9056,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceDeleteOneResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceDeleteOneResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -10335,7 +9066,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteOneResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceDeleteOneResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewDeleteResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -10344,7 +9075,7 @@ func (p *MemoGoServiceDeleteOneResult) ReadField0(iprot thrift.TProtocol) error 
 	return nil
 }
 
-func (p *MemoGoServiceDeleteOneResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteOneResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("DeleteOne_result"); err != nil {
 		goto WriteStructBeginError
@@ -10372,7 +9103,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteOneResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteOneResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -10391,43 +9122,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteOneResult) String() string {
+func (p *TodoManageServiceDeleteOneResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceDeleteOneResult(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceDeleteOneResult(%+v)", *p)
 
 }
 
-type MemoGoServiceDeleteByScopeArgs struct {
+type TodoManageServiceDeleteByScopeArgs struct {
 	Req *DeleteByScopeReq `thrift:"req,1"`
 }
 
-func NewMemoGoServiceDeleteByScopeArgs() *MemoGoServiceDeleteByScopeArgs {
-	return &MemoGoServiceDeleteByScopeArgs{}
+func NewTodoManageServiceDeleteByScopeArgs() *TodoManageServiceDeleteByScopeArgs {
+	return &TodoManageServiceDeleteByScopeArgs{}
 }
 
-func (p *MemoGoServiceDeleteByScopeArgs) InitDefault() {
+func (p *TodoManageServiceDeleteByScopeArgs) InitDefault() {
 }
 
-var MemoGoServiceDeleteByScopeArgs_Req_DEFAULT *DeleteByScopeReq
+var TodoManageServiceDeleteByScopeArgs_Req_DEFAULT *DeleteByScopeReq
 
-func (p *MemoGoServiceDeleteByScopeArgs) GetReq() (v *DeleteByScopeReq) {
+func (p *TodoManageServiceDeleteByScopeArgs) GetReq() (v *DeleteByScopeReq) {
 	if !p.IsSetReq() {
-		return MemoGoServiceDeleteByScopeArgs_Req_DEFAULT
+		return TodoManageServiceDeleteByScopeArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-var fieldIDToName_MemoGoServiceDeleteByScopeArgs = map[int16]string{
+var fieldIDToName_TodoManageServiceDeleteByScopeArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *MemoGoServiceDeleteByScopeArgs) IsSetReq() bool {
+func (p *TodoManageServiceDeleteByScopeArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *MemoGoServiceDeleteByScopeArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteByScopeArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -10473,7 +9204,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceDeleteByScopeArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceDeleteByScopeArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -10483,7 +9214,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteByScopeArgs) ReadField1(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceDeleteByScopeArgs) ReadField1(iprot thrift.TProtocol) error {
 	_field := NewDeleteByScopeReq()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -10492,7 +9223,7 @@ func (p *MemoGoServiceDeleteByScopeArgs) ReadField1(iprot thrift.TProtocol) erro
 	return nil
 }
 
-func (p *MemoGoServiceDeleteByScopeArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteByScopeArgs) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("DeleteByScope_args"); err != nil {
 		goto WriteStructBeginError
@@ -10520,7 +9251,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteByScopeArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteByScopeArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -10537,43 +9268,43 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteByScopeArgs) String() string {
+func (p *TodoManageServiceDeleteByScopeArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceDeleteByScopeArgs(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceDeleteByScopeArgs(%+v)", *p)
 
 }
 
-type MemoGoServiceDeleteByScopeResult struct {
+type TodoManageServiceDeleteByScopeResult struct {
 	Success *DeleteResp `thrift:"success,0,optional"`
 }
 
-func NewMemoGoServiceDeleteByScopeResult() *MemoGoServiceDeleteByScopeResult {
-	return &MemoGoServiceDeleteByScopeResult{}
+func NewTodoManageServiceDeleteByScopeResult() *TodoManageServiceDeleteByScopeResult {
+	return &TodoManageServiceDeleteByScopeResult{}
 }
 
-func (p *MemoGoServiceDeleteByScopeResult) InitDefault() {
+func (p *TodoManageServiceDeleteByScopeResult) InitDefault() {
 }
 
-var MemoGoServiceDeleteByScopeResult_Success_DEFAULT *DeleteResp
+var TodoManageServiceDeleteByScopeResult_Success_DEFAULT *DeleteResp
 
-func (p *MemoGoServiceDeleteByScopeResult) GetSuccess() (v *DeleteResp) {
+func (p *TodoManageServiceDeleteByScopeResult) GetSuccess() (v *DeleteResp) {
 	if !p.IsSetSuccess() {
-		return MemoGoServiceDeleteByScopeResult_Success_DEFAULT
+		return TodoManageServiceDeleteByScopeResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-var fieldIDToName_MemoGoServiceDeleteByScopeResult = map[int16]string{
+var fieldIDToName_TodoManageServiceDeleteByScopeResult = map[int16]string{
 	0: "success",
 }
 
-func (p *MemoGoServiceDeleteByScopeResult) IsSetSuccess() bool {
+func (p *TodoManageServiceDeleteByScopeResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *MemoGoServiceDeleteByScopeResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteByScopeResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -10619,7 +9350,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_MemoGoServiceDeleteByScopeResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoManageServiceDeleteByScopeResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -10629,7 +9360,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteByScopeResult) ReadField0(iprot thrift.TProtocol) error {
+func (p *TodoManageServiceDeleteByScopeResult) ReadField0(iprot thrift.TProtocol) error {
 	_field := NewDeleteResp()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -10638,7 +9369,7 @@ func (p *MemoGoServiceDeleteByScopeResult) ReadField0(iprot thrift.TProtocol) er
 	return nil
 }
 
-func (p *MemoGoServiceDeleteByScopeResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteByScopeResult) Write(oprot thrift.TProtocol) (err error) {
 	var fieldId int16
 	if err = oprot.WriteStructBegin("DeleteByScope_result"); err != nil {
 		goto WriteStructBeginError
@@ -10666,7 +9397,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteByScopeResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *TodoManageServiceDeleteByScopeResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -10685,10 +9416,1422 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *MemoGoServiceDeleteByScopeResult) String() string {
+func (p *TodoManageServiceDeleteByScopeResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("MemoGoServiceDeleteByScopeResult(%+v)", *p)
+	return fmt.Sprintf("TodoManageServiceDeleteByScopeResult(%+v)", *p)
+
+}
+
+type TodoQueryServiceProcessor struct {
+	processorMap map[string]thrift.TProcessorFunction
+	handler      TodoQueryService
+}
+
+func (p *TodoQueryServiceProcessor) AddToProcessorMap(key string, processor thrift.TProcessorFunction) {
+	p.processorMap[key] = processor
+}
+
+func (p *TodoQueryServiceProcessor) GetProcessorFunction(key string) (processor thrift.TProcessorFunction, ok bool) {
+	processor, ok = p.processorMap[key]
+	return processor, ok
+}
+
+func (p *TodoQueryServiceProcessor) ProcessorMap() map[string]thrift.TProcessorFunction {
+	return p.processorMap
+}
+
+func NewTodoQueryServiceProcessor(handler TodoQueryService) *TodoQueryServiceProcessor {
+	self := &TodoQueryServiceProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
+	self.AddToProcessorMap("ListTodos", &todoQueryServiceProcessorListTodos{handler: handler})
+	self.AddToProcessorMap("SearchTodos", &todoQueryServiceProcessorSearchTodos{handler: handler})
+	self.AddToProcessorMap("ListTodosCursor", &todoQueryServiceProcessorListTodosCursor{handler: handler})
+	self.AddToProcessorMap("SearchTodosCursor", &todoQueryServiceProcessorSearchTodosCursor{handler: handler})
+	return self
+}
+func (p *TodoQueryServiceProcessor) Process(ctx context.Context, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	name, _, seqId, err := iprot.ReadMessageBegin()
+	if err != nil {
+		return false, err
+	}
+	if processor, ok := p.GetProcessorFunction(name); ok {
+		return processor.Process(ctx, seqId, iprot, oprot)
+	}
+	iprot.Skip(thrift.STRUCT)
+	iprot.ReadMessageEnd()
+	x := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
+	oprot.WriteMessageBegin(name, thrift.EXCEPTION, seqId)
+	x.Write(oprot)
+	oprot.WriteMessageEnd()
+	oprot.Flush(ctx)
+	return false, x
+}
+
+type todoQueryServiceProcessorListTodos struct {
+	handler TodoQueryService
+}
+
+func (p *todoQueryServiceProcessorListTodos) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoQueryServiceListTodosArgs{}
+	if err = args.Read(iprot); err != nil {
+		iprot.ReadMessageEnd()
+		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
+		oprot.WriteMessageBegin("ListTodos", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush(ctx)
+		return false, err
+	}
+
+	iprot.ReadMessageEnd()
+	var err2 error
+	result := TodoQueryServiceListTodosResult{}
+	var retval *ListTodosResp
+	if retval, err2 = p.handler.ListTodos(ctx, args.Req); err2 != nil {
+		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing ListTodos: "+err2.Error())
+		oprot.WriteMessageBegin("ListTodos", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush(ctx)
+		return true, err2
+	} else {
+		result.Success = retval
+	}
+	if err2 = oprot.WriteMessageBegin("ListTodos", thrift.REPLY, seqId); err2 != nil {
+		err = err2
+	}
+	if err2 = result.Write(oprot); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.Flush(ctx); err == nil && err2 != nil {
+		err = err2
+	}
+	if err != nil {
+		return
+	}
+	return true, err
+}
+
+type todoQueryServiceProcessorSearchTodos struct {
+	handler TodoQueryService
+}
+
+func (p *todoQueryServiceProcessorSearchTodos) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoQueryServiceSearchTodosArgs{}
+	if err = args.Read(iprot); err != nil {
+		iprot.ReadMessageEnd()
+		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
+		oprot.WriteMessageBegin("SearchTodos", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush(ctx)
+		return false, err
+	}
+
+	iprot.ReadMessageEnd()
+	var err2 error
+	result := TodoQueryServiceSearchTodosResult{}
+	var retval *SearchTodosResp
+	if retval, err2 = p.handler.SearchTodos(ctx, args.Req); err2 != nil {
+		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing SearchTodos: "+err2.Error())
+		oprot.WriteMessageBegin("SearchTodos", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush(ctx)
+		return true, err2
+	} else {
+		result.Success = retval
+	}
+	if err2 = oprot.WriteMessageBegin("SearchTodos", thrift.REPLY, seqId); err2 != nil {
+		err = err2
+	}
+	if err2 = result.Write(oprot); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.Flush(ctx); err == nil && err2 != nil {
+		err = err2
+	}
+	if err != nil {
+		return
+	}
+	return true, err
+}
+
+type todoQueryServiceProcessorListTodosCursor struct {
+	handler TodoQueryService
+}
+
+func (p *todoQueryServiceProcessorListTodosCursor) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoQueryServiceListTodosCursorArgs{}
+	if err = args.Read(iprot); err != nil {
+		iprot.ReadMessageEnd()
+		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
+		oprot.WriteMessageBegin("ListTodosCursor", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush(ctx)
+		return false, err
+	}
+
+	iprot.ReadMessageEnd()
+	var err2 error
+	result := TodoQueryServiceListTodosCursorResult{}
+	var retval *ListTodosCursorResp
+	if retval, err2 = p.handler.ListTodosCursor(ctx, args.Req); err2 != nil {
+		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing ListTodosCursor: "+err2.Error())
+		oprot.WriteMessageBegin("ListTodosCursor", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush(ctx)
+		return true, err2
+	} else {
+		result.Success = retval
+	}
+	if err2 = oprot.WriteMessageBegin("ListTodosCursor", thrift.REPLY, seqId); err2 != nil {
+		err = err2
+	}
+	if err2 = result.Write(oprot); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.Flush(ctx); err == nil && err2 != nil {
+		err = err2
+	}
+	if err != nil {
+		return
+	}
+	return true, err
+}
+
+type todoQueryServiceProcessorSearchTodosCursor struct {
+	handler TodoQueryService
+}
+
+func (p *todoQueryServiceProcessorSearchTodosCursor) Process(ctx context.Context, seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := TodoQueryServiceSearchTodosCursorArgs{}
+	if err = args.Read(iprot); err != nil {
+		iprot.ReadMessageEnd()
+		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
+		oprot.WriteMessageBegin("SearchTodosCursor", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush(ctx)
+		return false, err
+	}
+
+	iprot.ReadMessageEnd()
+	var err2 error
+	result := TodoQueryServiceSearchTodosCursorResult{}
+	var retval *SearchTodosCursorResp
+	if retval, err2 = p.handler.SearchTodosCursor(ctx, args.Req); err2 != nil {
+		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing SearchTodosCursor: "+err2.Error())
+		oprot.WriteMessageBegin("SearchTodosCursor", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush(ctx)
+		return true, err2
+	} else {
+		result.Success = retval
+	}
+	if err2 = oprot.WriteMessageBegin("SearchTodosCursor", thrift.REPLY, seqId); err2 != nil {
+		err = err2
+	}
+	if err2 = result.Write(oprot); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.Flush(ctx); err == nil && err2 != nil {
+		err = err2
+	}
+	if err != nil {
+		return
+	}
+	return true, err
+}
+
+type TodoQueryServiceListTodosArgs struct {
+	Req *ListTodosReq `thrift:"req,1"`
+}
+
+func NewTodoQueryServiceListTodosArgs() *TodoQueryServiceListTodosArgs {
+	return &TodoQueryServiceListTodosArgs{}
+}
+
+func (p *TodoQueryServiceListTodosArgs) InitDefault() {
+}
+
+var TodoQueryServiceListTodosArgs_Req_DEFAULT *ListTodosReq
+
+func (p *TodoQueryServiceListTodosArgs) GetReq() (v *ListTodosReq) {
+	if !p.IsSetReq() {
+		return TodoQueryServiceListTodosArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+var fieldIDToName_TodoQueryServiceListTodosArgs = map[int16]string{
+	1: "req",
+}
+
+func (p *TodoQueryServiceListTodosArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *TodoQueryServiceListTodosArgs) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 1:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField1(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoQueryServiceListTodosArgs[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewListTodosReq()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Req = _field
+	return nil
+}
+
+func (p *TodoQueryServiceListTodosArgs) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("ListTodos_args"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField1(oprot); err != nil {
+			fieldId = 1
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := p.Req.Write(oprot); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TodoQueryServiceListTodosArgs(%+v)", *p)
+
+}
+
+type TodoQueryServiceListTodosResult struct {
+	Success *ListTodosResp `thrift:"success,0,optional"`
+}
+
+func NewTodoQueryServiceListTodosResult() *TodoQueryServiceListTodosResult {
+	return &TodoQueryServiceListTodosResult{}
+}
+
+func (p *TodoQueryServiceListTodosResult) InitDefault() {
+}
+
+var TodoQueryServiceListTodosResult_Success_DEFAULT *ListTodosResp
+
+func (p *TodoQueryServiceListTodosResult) GetSuccess() (v *ListTodosResp) {
+	if !p.IsSetSuccess() {
+		return TodoQueryServiceListTodosResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+var fieldIDToName_TodoQueryServiceListTodosResult = map[int16]string{
+	0: "success",
+}
+
+func (p *TodoQueryServiceListTodosResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *TodoQueryServiceListTodosResult) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 0:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField0(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoQueryServiceListTodosResult[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewListTodosResp()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Success = _field
+	return nil
+}
+
+func (p *TodoQueryServiceListTodosResult) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("ListTodos_result"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField0(oprot); err != nil {
+			fieldId = 0
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			goto WriteFieldBeginError
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return err
+		}
+		if err = oprot.WriteFieldEnd(); err != nil {
+			goto WriteFieldEndError
+		}
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TodoQueryServiceListTodosResult(%+v)", *p)
+
+}
+
+type TodoQueryServiceSearchTodosArgs struct {
+	Req *SearchTodosReq `thrift:"req,1"`
+}
+
+func NewTodoQueryServiceSearchTodosArgs() *TodoQueryServiceSearchTodosArgs {
+	return &TodoQueryServiceSearchTodosArgs{}
+}
+
+func (p *TodoQueryServiceSearchTodosArgs) InitDefault() {
+}
+
+var TodoQueryServiceSearchTodosArgs_Req_DEFAULT *SearchTodosReq
+
+func (p *TodoQueryServiceSearchTodosArgs) GetReq() (v *SearchTodosReq) {
+	if !p.IsSetReq() {
+		return TodoQueryServiceSearchTodosArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+var fieldIDToName_TodoQueryServiceSearchTodosArgs = map[int16]string{
+	1: "req",
+}
+
+func (p *TodoQueryServiceSearchTodosArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *TodoQueryServiceSearchTodosArgs) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 1:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField1(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoQueryServiceSearchTodosArgs[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewSearchTodosReq()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Req = _field
+	return nil
+}
+
+func (p *TodoQueryServiceSearchTodosArgs) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("SearchTodos_args"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField1(oprot); err != nil {
+			fieldId = 1
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := p.Req.Write(oprot); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TodoQueryServiceSearchTodosArgs(%+v)", *p)
+
+}
+
+type TodoQueryServiceSearchTodosResult struct {
+	Success *SearchTodosResp `thrift:"success,0,optional"`
+}
+
+func NewTodoQueryServiceSearchTodosResult() *TodoQueryServiceSearchTodosResult {
+	return &TodoQueryServiceSearchTodosResult{}
+}
+
+func (p *TodoQueryServiceSearchTodosResult) InitDefault() {
+}
+
+var TodoQueryServiceSearchTodosResult_Success_DEFAULT *SearchTodosResp
+
+func (p *TodoQueryServiceSearchTodosResult) GetSuccess() (v *SearchTodosResp) {
+	if !p.IsSetSuccess() {
+		return TodoQueryServiceSearchTodosResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+var fieldIDToName_TodoQueryServiceSearchTodosResult = map[int16]string{
+	0: "success",
+}
+
+func (p *TodoQueryServiceSearchTodosResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *TodoQueryServiceSearchTodosResult) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 0:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField0(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoQueryServiceSearchTodosResult[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewSearchTodosResp()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Success = _field
+	return nil
+}
+
+func (p *TodoQueryServiceSearchTodosResult) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("SearchTodos_result"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField0(oprot); err != nil {
+			fieldId = 0
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			goto WriteFieldBeginError
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return err
+		}
+		if err = oprot.WriteFieldEnd(); err != nil {
+			goto WriteFieldEndError
+		}
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TodoQueryServiceSearchTodosResult(%+v)", *p)
+
+}
+
+type TodoQueryServiceListTodosCursorArgs struct {
+	Req *ListTodosCursorReq `thrift:"req,1"`
+}
+
+func NewTodoQueryServiceListTodosCursorArgs() *TodoQueryServiceListTodosCursorArgs {
+	return &TodoQueryServiceListTodosCursorArgs{}
+}
+
+func (p *TodoQueryServiceListTodosCursorArgs) InitDefault() {
+}
+
+var TodoQueryServiceListTodosCursorArgs_Req_DEFAULT *ListTodosCursorReq
+
+func (p *TodoQueryServiceListTodosCursorArgs) GetReq() (v *ListTodosCursorReq) {
+	if !p.IsSetReq() {
+		return TodoQueryServiceListTodosCursorArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+var fieldIDToName_TodoQueryServiceListTodosCursorArgs = map[int16]string{
+	1: "req",
+}
+
+func (p *TodoQueryServiceListTodosCursorArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *TodoQueryServiceListTodosCursorArgs) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 1:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField1(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoQueryServiceListTodosCursorArgs[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosCursorArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewListTodosCursorReq()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Req = _field
+	return nil
+}
+
+func (p *TodoQueryServiceListTodosCursorArgs) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("ListTodosCursor_args"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField1(oprot); err != nil {
+			fieldId = 1
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosCursorArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := p.Req.Write(oprot); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosCursorArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TodoQueryServiceListTodosCursorArgs(%+v)", *p)
+
+}
+
+type TodoQueryServiceListTodosCursorResult struct {
+	Success *ListTodosCursorResp `thrift:"success,0,optional"`
+}
+
+func NewTodoQueryServiceListTodosCursorResult() *TodoQueryServiceListTodosCursorResult {
+	return &TodoQueryServiceListTodosCursorResult{}
+}
+
+func (p *TodoQueryServiceListTodosCursorResult) InitDefault() {
+}
+
+var TodoQueryServiceListTodosCursorResult_Success_DEFAULT *ListTodosCursorResp
+
+func (p *TodoQueryServiceListTodosCursorResult) GetSuccess() (v *ListTodosCursorResp) {
+	if !p.IsSetSuccess() {
+		return TodoQueryServiceListTodosCursorResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+var fieldIDToName_TodoQueryServiceListTodosCursorResult = map[int16]string{
+	0: "success",
+}
+
+func (p *TodoQueryServiceListTodosCursorResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *TodoQueryServiceListTodosCursorResult) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 0:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField0(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoQueryServiceListTodosCursorResult[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosCursorResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewListTodosCursorResp()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Success = _field
+	return nil
+}
+
+func (p *TodoQueryServiceListTodosCursorResult) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("ListTodosCursor_result"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField0(oprot); err != nil {
+			fieldId = 0
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosCursorResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			goto WriteFieldBeginError
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return err
+		}
+		if err = oprot.WriteFieldEnd(); err != nil {
+			goto WriteFieldEndError
+		}
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
+}
+
+func (p *TodoQueryServiceListTodosCursorResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TodoQueryServiceListTodosCursorResult(%+v)", *p)
+
+}
+
+type TodoQueryServiceSearchTodosCursorArgs struct {
+	Req *SearchTodosCursorReq `thrift:"req,1"`
+}
+
+func NewTodoQueryServiceSearchTodosCursorArgs() *TodoQueryServiceSearchTodosCursorArgs {
+	return &TodoQueryServiceSearchTodosCursorArgs{}
+}
+
+func (p *TodoQueryServiceSearchTodosCursorArgs) InitDefault() {
+}
+
+var TodoQueryServiceSearchTodosCursorArgs_Req_DEFAULT *SearchTodosCursorReq
+
+func (p *TodoQueryServiceSearchTodosCursorArgs) GetReq() (v *SearchTodosCursorReq) {
+	if !p.IsSetReq() {
+		return TodoQueryServiceSearchTodosCursorArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+var fieldIDToName_TodoQueryServiceSearchTodosCursorArgs = map[int16]string{
+	1: "req",
+}
+
+func (p *TodoQueryServiceSearchTodosCursorArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *TodoQueryServiceSearchTodosCursorArgs) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 1:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField1(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoQueryServiceSearchTodosCursorArgs[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosCursorArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewSearchTodosCursorReq()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Req = _field
+	return nil
+}
+
+func (p *TodoQueryServiceSearchTodosCursorArgs) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("SearchTodosCursor_args"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField1(oprot); err != nil {
+			fieldId = 1
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosCursorArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := p.Req.Write(oprot); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosCursorArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TodoQueryServiceSearchTodosCursorArgs(%+v)", *p)
+
+}
+
+type TodoQueryServiceSearchTodosCursorResult struct {
+	Success *SearchTodosCursorResp `thrift:"success,0,optional"`
+}
+
+func NewTodoQueryServiceSearchTodosCursorResult() *TodoQueryServiceSearchTodosCursorResult {
+	return &TodoQueryServiceSearchTodosCursorResult{}
+}
+
+func (p *TodoQueryServiceSearchTodosCursorResult) InitDefault() {
+}
+
+var TodoQueryServiceSearchTodosCursorResult_Success_DEFAULT *SearchTodosCursorResp
+
+func (p *TodoQueryServiceSearchTodosCursorResult) GetSuccess() (v *SearchTodosCursorResp) {
+	if !p.IsSetSuccess() {
+		return TodoQueryServiceSearchTodosCursorResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+var fieldIDToName_TodoQueryServiceSearchTodosCursorResult = map[int16]string{
+	0: "success",
+}
+
+func (p *TodoQueryServiceSearchTodosCursorResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *TodoQueryServiceSearchTodosCursorResult) Read(iprot thrift.TProtocol) (err error) {
+
+	var fieldTypeId thrift.TType
+	var fieldId int16
+
+	if _, err = iprot.ReadStructBegin(); err != nil {
+		goto ReadStructBeginError
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err = iprot.ReadFieldBegin()
+		if err != nil {
+			goto ReadFieldBeginError
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+
+		switch fieldId {
+		case 0:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField0(iprot); err != nil {
+					goto ReadFieldError
+				}
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		default:
+			if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		}
+		if err = iprot.ReadFieldEnd(); err != nil {
+			goto ReadFieldEndError
+		}
+	}
+	if err = iprot.ReadStructEnd(); err != nil {
+		goto ReadStructEndError
+	}
+
+	return nil
+ReadStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct begin error: ", p), err)
+ReadFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
+ReadFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_TodoQueryServiceSearchTodosCursorResult[fieldId]), err)
+SkipFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
+
+ReadFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read field end error", p), err)
+ReadStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosCursorResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewSearchTodosCursorResp()
+	if err := _field.Read(iprot); err != nil {
+		return err
+	}
+	p.Success = _field
+	return nil
+}
+
+func (p *TodoQueryServiceSearchTodosCursorResult) Write(oprot thrift.TProtocol) (err error) {
+	var fieldId int16
+	if err = oprot.WriteStructBegin("SearchTodosCursor_result"); err != nil {
+		goto WriteStructBeginError
+	}
+	if p != nil {
+		if err = p.writeField0(oprot); err != nil {
+			fieldId = 0
+			goto WriteFieldError
+		}
+	}
+	if err = oprot.WriteFieldStop(); err != nil {
+		goto WriteFieldStopError
+	}
+	if err = oprot.WriteStructEnd(); err != nil {
+		goto WriteStructEndError
+	}
+	return nil
+WriteStructBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+WriteFieldError:
+	return thrift.PrependError(fmt.Sprintf("%T write field %d error: ", p, fieldId), err)
+WriteFieldStopError:
+	return thrift.PrependError(fmt.Sprintf("%T write field stop error: ", p), err)
+WriteStructEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosCursorResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			goto WriteFieldBeginError
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return err
+		}
+		if err = oprot.WriteFieldEnd(); err != nil {
+			goto WriteFieldEndError
+		}
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
+}
+
+func (p *TodoQueryServiceSearchTodosCursorResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("TodoQueryServiceSearchTodosCursorResult(%+v)", *p)
 
 }
